@@ -1,0 +1,12 @@
+.venv/
+dist/
+__pycache__/
+*.pyc
+dist/
+*.egg-info/
+.vscode/
+.Python
+develop-eggs/
+.pytest_cache
+*.bin
+*.hex
