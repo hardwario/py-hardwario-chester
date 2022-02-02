@@ -1,5 +1,4 @@
 import logging
-from tkinter.messagebox import NO
 from pynrfjprog import HighLevel, APIError
 from pynrfjprog.Parameters import *
 from .pib import PIB
