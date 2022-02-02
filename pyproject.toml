@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "hardwario-chester"
+version = "1.0.0"
+description = "HARDWARIO CHESTER"
+authors = ["Karel Blavka <karel.blavka@hardwario.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/hardwario/py-hardwario-common"
+repository = "https://github.com/hardwario/py-hardwario-common"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities",
+    "Environment :: Console"
+]
+
+packages = [
+    { include = "hardwario", from = "src" },
+]
+
+exclude = [
+    "**/*.pyc",
+    "**/*.pyi",
+]
+
+include = [
+    "LICENSE",
+]
+
+[tool.poetry.scripts]
+# chester = "hardwario.chester.cli:main"
+
+[tool.poetry.dependencies]
+python = ">=3.6"
+click = "^8.0.3"
+pynrfjprog = "^10.15.2"
+hardwario-common = "^1.0.1"
+
+[tool.poetry.dev-dependencies]
+# hardwario-common = {path = "../py-hardwario-common", develop = true}
+pycodestyle = "^2.8.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
