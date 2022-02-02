@@ -1,0 +1,70 @@
+name: Main
+
+on:
+  push:
+    paths-ignore:
+      - '**/README.md'
+      - '.*'
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  codestyle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - run: |
+          pip install poetry
+          poetry install
+          poetry run pycodestyle --ignore=E501 src tests
+
+  test_build:
+    needs: codestyle
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: |
+          pip install poetry
+          poetry install
+          poetry build
+
+  deploy:
+    needs: test_build
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    environment: deploy
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Publish
+        env:
+          POETRY_HTTP_BASIC_PYPI_USERNAME: __token__
+          POETRY_HTTP_BASIC_PYPI_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
+        run: |
+          pip install poetry
+          poetry install
+          sed -r -i'' "s/\"1\.0\.0\"/\"$RELEASE_VERSION\"/g" pyproject.toml
+          poetry publish --build
