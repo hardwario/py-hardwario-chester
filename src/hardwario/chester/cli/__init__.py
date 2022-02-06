@@ -5,7 +5,7 @@ from . import app
 logger = logging.getLogger(__name__)
 
 
-@click.group(name='chester', help='CHESTER tools')
+@click.group(name='chester', help='Commands for CHESTER (configurable IoT gateway).')
 @click.pass_context
 def cli(ctx):
     pass
