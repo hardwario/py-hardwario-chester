@@ -2,7 +2,7 @@ import logging
 import re
 import click
 import sys
-from ..pib import PIB, hw_variant_to_number
+from ..pib import PIB, hardware_variant_to_number
 from ..nrfjprog import NRFJProg
 
 
@@ -47,7 +47,7 @@ def validate_serial_number(ctx, param, value):
     return int(value)
 
 
-def validate_hw_revision(ctx, param, value):
+def validate_hardware_revision(ctx, param, value):
     if isinstance(value, int):
         return value
 
@@ -61,15 +61,24 @@ def validate_hw_revision(ctx, param, value):
     return (int(major) << 8) | int(minor)
 
 
-hw_variant_list = [
-    'CHESTER-M-CDGLS',
+hardware_variant_list = [
+    'CHESTER-M-BCDGLS',
+    'CHESTER-M-BCGLS',
+    'CHESTER-M-BCGS',
+    'CHESTER-M-BCGV',
+    'CHESTER-M-BCS',
+    'CHESTER-M-BCV',
+    'CHESTER-M-BL',
     'CHESTER-M-CGLS',
+    'CHESTER-M-CGS',
     'CHESTER-M-CGV',
+    'CHESTER-M-CS',
+    'CHESTER-M-CV',
     'CHESTER-M-L'
 ]
 
 
-def validate_hw_variant(ctx, param, value):
+def validate_hardware_variant(ctx, param, value):
     if isinstance(value, int):
         if (value < 0) or (value > 2**32):
             raise click.BadParameter('Bad Hardware variant format')
@@ -81,6 +90,7 @@ def validate_hw_variant(ctx, param, value):
         if value not in hardware_variant_list:
             raise click.BadParameter('Bad Hardware variant not from options')
 
+        return hardware_variant_to_number(value)
 
     if value.startswith('0x'):
         return int(value[2:], 16)
@@ -118,8 +128,8 @@ def command_uicr_read(output, file):
         print(f'Serial number: {pib.get_serial_number()}')
         print(f'Vendor name: {pib.get_vendor_name()}')
         print(f'Product name: {pib.get_product_name()}')
-        print(f'Hardware revision: 0x{pib.get_hw_revision():04x}')
-        print(f'Hardware variant: 0x{pib.get_hw_variant():08x}')
+        print(f'Hardware revision: 0x{pib.get_hardware_revision():04x}')
+        print(f'Hardware variant: 0x{pib.get_hardware_variant():08x}')
         print(f'BLE passkey: {pib.get_ble_passkey()}')
 
     elif output == 'hex':
@@ -167,8 +177,8 @@ def command_uicr_write(input, serial_number, vendor_name, product_name, hardware
         pib.set_serial_number(serial_number)
         pib.set_vendor_name(vendor_name)
         pib.set_product_name(product_name)
-        pib.set_hw_revision(hardware_revision)
-        pib.set_hw_variant(hardware_variant)
+        pib.set_hardware_revision(hardware_revision)
+        pib.set_hardware_variant(hardware_variant)
         pib.set_ble_passkey(ble_passkey)
         buffer = pib.get_buffer()
 

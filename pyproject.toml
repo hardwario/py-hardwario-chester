@@ -42,10 +42,10 @@ include = [
 python = ">=3.6"
 click = "^8.0.3"
 pynrfjprog = "^10.15.2"
-hardwario-common = "^1.0.1"
+hardwario-common = "^1.1.0"
 
 [tool.poetry.dev-dependencies]
-# hardwario-common = {path = "../py-hardwario-common", develop = true}
+#hardwario-common = {path = "../py-hardwario-common", develop = true}
 pycodestyle = "^2.8.0"
 
 [build-system]
