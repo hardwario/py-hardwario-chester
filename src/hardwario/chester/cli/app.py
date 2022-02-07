@@ -2,6 +2,7 @@ import logging
 import re
 import click
 import sys
+import json
 from ..pib import PIB
 from ..nrfjprog import NRFJProg
 
@@ -95,6 +96,7 @@ def group_uicr():
 
 @group_uicr.command('read')
 @click.option('--pib', 'output', flag_value='pib', required=True, help='Read HARDWARIO Product Information Block from UICR.')
+@click.option('--pib-json', 'output', flag_value='pib-json', required=True, help='Read HARDWARIO Product Information Block from UICR to <FILE> or stdout.')
 @click.option('--bin', 'output', flag_value='bin', required=True, help='Read generic UICR flash area to <FILE> or stdout.')
 @click.option('--hex', 'output', flag_value='hex', required=True, help='Read generic UICR flash area to <FILE> or stdout.')
 @click.argument('file', metavar="<FILE>", nargs=-1)
@@ -116,6 +118,14 @@ def command_uicr_read(output, file):
         print(f'Serial number: {pib.get_serial_number()}')
         print(f'Claim token: {pib.get_claim_token()}')
         print(f'BLE passkey: {pib.get_ble_passkey()}')
+
+    if output == 'pib-json':
+        pib = PIB(buffer)
+        if file:
+            with open(file, 'w') as fd:
+                json.dump(pib.get_dict(), fd, indent=2)
+        else:
+            print(json.dumps(pib.get_dict()))
 
     elif output == 'hex':
         if file:

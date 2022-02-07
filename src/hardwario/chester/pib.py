@@ -30,3 +30,9 @@ class PIB(hardwario.common.pib.PIB):
 
     def set_ble_passkey(self, value):
         self._pack(self.BLE_PASSKEY, value)
+
+    def get_dict(self):
+        payload = super().get_dict()
+        payload['claim_token'] = self.get_claim_token()
+        payload['ble_passkey'] = self.get_ble_passkey()
+        return payload
