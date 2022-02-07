@@ -2,7 +2,7 @@ import logging
 import re
 import click
 import sys
-from ..pib import PIB, hardware_variant_to_number
+from ..pib import PIB, hw_variant_to_number
 from ..nrfjprog import NRFJProg
 
 
@@ -47,7 +47,7 @@ def validate_serial_number(ctx, param, value):
     return int(value)
 
 
-def validate_hardware_revision(ctx, param, value):
+def validate_hw_revision(ctx, param, value):
     if isinstance(value, int):
         return value
 
@@ -61,7 +61,7 @@ def validate_hardware_revision(ctx, param, value):
     return (int(major) << 8) | int(minor)
 
 
-hardware_variant_list = [
+hw_variant_list = [
     'CHESTER-M-BCDGLS',
     'CHESTER-M-BCGLS',
     'CHESTER-M-BCGS',
@@ -78,7 +78,7 @@ hardware_variant_list = [
 ]
 
 
-def validate_hardware_variant(ctx, param, value):
+def validate_hw_variant(ctx, param, value):
     if isinstance(value, int):
         if (value < 0) or (value > 2**32):
             raise click.BadParameter('Bad Hardware variant format')
@@ -87,10 +87,10 @@ def validate_hardware_variant(ctx, param, value):
     if isinstance(value, str):
         if value == '':
             return 0
-        if value not in hardware_variant_list:
+        if value not in hw_variant_list:
             raise click.BadParameter('Bad Hardware variant not from options')
 
-        return hardware_variant_to_number(value)
+        return hw_variant_to_number(value)
 
     if value.startswith('0x'):
         return int(value[2:], 16)
@@ -128,8 +128,8 @@ def command_uicr_read(output, file):
         print(f'Serial number: {pib.get_serial_number()}')
         print(f'Vendor name: {pib.get_vendor_name()}')
         print(f'Product name: {pib.get_product_name()}')
-        print(f'Hardware revision: 0x{pib.get_hardware_revision():04x}')
-        print(f'Hardware variant: 0x{pib.get_hardware_variant():08x}')
+        print(f'Hardware revision: 0x{pib.get_hw_revision():04x}')
+        print(f'Hardware variant: 0x{pib.get_hw_variant():08x}')
         print(f'BLE passkey: {pib.get_ble_passkey()}')
 
     elif output == 'hex':
@@ -147,24 +147,24 @@ def command_uicr_read(output, file):
             sys.stdout.buffer.write(buffer)
 
 
-hardware_variant_help = 'Hardware variant in hexadecimal format or one of the options: ' + \
-    ('\n'.join(hardware_variant_list))
+hw_variant_help = 'Hardware variant in hexadecimal format or one of the options: ' + \
+    ('\n'.join(hw_variant_list))
 
 
 @ group_uicr.command('write')
 @click.option('--pib', 'input', flag_value='pib', required=True, help='Write HARDWARIO Product Information Block to UICR.')
 @click.option('--bin', 'input', flag_value='bin', required=True, help='Write generic UICR flash area from <FILE> or stdin.')
 @click.option('--hex', 'input', flag_value='hex', required=True, help='Write generic UICR flash area from <FILE> or stdin.')
-@ click.option('--serial-number', type=click.UNPROCESSED, help='Serial number in decimal format.', prompt='--pib' in sys.argv, callback=validate_serial_number)
 @ click.option('--vendor-name', type=str, help='Vendor name (max 31 characters).', default='HARDWARIO', prompt='--pib' in sys.argv, show_default=True)
 @ click.option('--product-name', type=str, help='Product name (max 31 characters).', default='CHESTER-M', prompt='--pib' in sys.argv, show_default=True)
-@ click.option('--hardware-revision', type=click.UNPROCESSED, help='Hardware revision in Rx.y format.', default='R3.2', prompt='--pib' in sys.argv, show_default=True, callback=validate_hardware_revision)
-@ click.option('--hardware-variant', type=click.UNPROCESSED, help=hardware_variant_help, default='', prompt='--pib' in sys.argv, show_default=True, callback=validate_hardware_variant)
+@ click.option('--hw-revision', type=click.UNPROCESSED, help='Hardware revision in Rx.y format.', default='R3.2', prompt='Hardware revision' if '--pib' in sys.argv else False, show_default=True, callback=validate_hw_revision)
+@ click.option('--hw-variant', type=click.UNPROCESSED, help=hw_variant_help, default='', prompt='Hardware variant' if '--pib' in sys.argv else False, show_default=True, callback=validate_hw_variant)
+@ click.option('--serial-number', type=click.UNPROCESSED, help='Serial number in decimal format.', prompt='--pib' in sys.argv, callback=validate_serial_number)
 @ click.option('--ble-passkey', type=str, help='Bluetooth security passkey.', default='123456', prompt='--pib' in sys.argv, show_default=True, callback=validate_ble_passkey)
 @ click.argument('file', metavar="<FILE>", nargs=-1)
-def command_uicr_write(input, serial_number, vendor_name, product_name, hardware_revision, hardware_variant, ble_passkey, file):
+def command_uicr_write(input, serial_number, vendor_name, product_name, hw_revision, hw_variant, ble_passkey, file):
     logger.debug("command_pib_write: %s", (input, serial_number,
-                 vendor_name, product_name, hardware_revision, hardware_variant, ble_passkey, file))
+                 vendor_name, product_name, hw_revision, hw_variant, ble_passkey, file))
     if file:
         if len(file) != 1:
             raise click.BadParameter('Too many arguments.')
@@ -174,11 +174,11 @@ def command_uicr_write(input, serial_number, vendor_name, product_name, hardware
 
     if input == 'pib':
         pib = PIB()
-        pib.set_serial_number(serial_number)
         pib.set_vendor_name(vendor_name)
         pib.set_product_name(product_name)
-        pib.set_hardware_revision(hardware_revision)
-        pib.set_hardware_variant(hardware_variant)
+        pib.set_hw_revision(hw_revision)
+        pib.set_hw_variant(hw_variant)
+        pib.set_serial_number(serial_number)
         pib.set_ble_passkey(ble_passkey)
         buffer = pib.get_buffer()
 

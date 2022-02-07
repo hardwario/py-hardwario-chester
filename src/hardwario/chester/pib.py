@@ -4,7 +4,7 @@ import hardwario.common.pib
 logger = logging.getLogger(__name__)
 
 
-def hardware_variant_to_number(text):
+def hw_variant_to_number(text):
     text = text.replace('CHESTER-M-', '')
     hw_variant = 0
     variant_order = 'ABCDGLSV'
