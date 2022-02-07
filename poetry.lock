@@ -28,7 +28,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
 name = "hardwario-common"
-version = "1.1.1"
+version = "1.2.0"
 description = "HARDWARIO Common"
 category = "main"
 optional = false
@@ -96,7 +96,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6"
-content-hash = "5321ce3693a4fdefc8fedc5423c4ac2e5faf427a91eff8525af1d0bbf2d0caa3"
+content-hash = "7d4d74827aa55ec6218c2e504844515f4038fb85dab95356eb72f68054101b14"
 
 [metadata.files]
 click = [
@@ -111,8 +111,8 @@ future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
 ]
 hardwario-common = [
-    {file = "hardwario-common-1.1.1.tar.gz", hash = "sha256:1f4f4d16bc077d48a65c645075aa6aa11448df47c02e1ccc81b5fe8f2d3720a1"},
-    {file = "hardwario_common-1.1.1-py3-none-any.whl", hash = "sha256:5c1a6773cc8e48fc9461f456efad6b164adbfea2c03863ebf38d70a048b6ea87"},
+    {file = "hardwario-common-1.2.0.tar.gz", hash = "sha256:8a5ee599fae4d2c3902c50d7f6f60e5a825aeae8861c9d2f067eab509d7aeb5a"},
+    {file = "hardwario_common-1.2.0-py3-none-any.whl", hash = "sha256:39a3914d2ef9cb37abbe4eeb72ff566774575b4897122857b08759e77d14ecaf"},
 ]
 importlib-metadata = [
     {file = "importlib_metadata-4.8.3-py3-none-any.whl", hash = "sha256:65a9576a5b2d58ca44d133c42a241905cc45e34d2c06fd5ba2bafa221e5d7b5e"},

@@ -4,30 +4,29 @@ import hardwario.common.pib
 logger = logging.getLogger(__name__)
 
 
-def hw_variant_to_number(text):
-    text = text.replace('CHESTER-M-', '')
-    hw_variant = 0
-    variant_order = 'ABCDGLSV'
-    for c in text:
-        index = variant_order.index(c)
-        hw_variant |= 1 << index
-    return hw_variant
-
-
 class PIB(hardwario.common.pib.PIB):
 
+    CLAIM_TOKEN = {
+        2: (0x46, '33s')
+    }
     BLE_PASSKEY = {
-        2: (0x50, '<16s')
+        2: (0x67, '17s')
     }
 
     def __init__(self, buf=None):
         super().__init__(version=2, buf=buf)
 
     def _update_family(self):
-        self._size = self._default_size + 16
+        self._size = self._default_size + 33 + 17
+
+    def get_claim_token(self):
+        return self._unpack(self.CLAIM_TOKEN)
+
+    def set_claim_token(self, value):
+        self._pack(self.CLAIM_TOKEN, value)
 
     def get_ble_passkey(self):
-        return '%s' % self._unpack(self.BLE_PASSKEY).decode('ascii').rstrip('\0')
+        return self._unpack(self.BLE_PASSKEY)
 
     def set_ble_passkey(self, value):
-        self._pack(self.BLE_PASSKEY, value.encode())
+        self._pack(self.BLE_PASSKEY, value)
