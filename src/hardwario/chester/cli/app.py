@@ -36,6 +36,13 @@ def command_erase(all):
         prog.erase_flash()
 
 
+@cli.command('reset')
+def command_reset():
+    '''Reset application firmware.'''
+    prog = NRFJProg()
+    prog.reset()
+
+
 def validate_pib_param(ctx, param, value):
     # print('validate_pib_param', ctx.obj, param.name, value)
     try:
