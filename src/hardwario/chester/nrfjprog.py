@@ -13,7 +13,7 @@ class NRFJProgException(Exception):
 
 class NRFJProg(HighLevel.DebugProbe):
 
-    def __init__(self, jlin_sn=None, clock_speed=None, log=False, log_suffix=None):
+    def __init__(self, device_family, jlin_sn=None, clock_speed=None, log=True, log_suffix=None):
         api = get_api()
         if jlin_sn is None:
             probes = api.get_connected_probes()
@@ -30,22 +30,34 @@ class NRFJProg(HighLevel.DebugProbe):
             else:
                 raise NRFJProgException(str(e))
 
+        self.info = self.get_device_info()
+
+        if device_family == 'app':
+            if self.info.device_family != DeviceFamily.NRF52:
+                raise NRFJProgException(
+                    'Detected bad MCU expect: app (NRF52).')
+        elif device_family == 'lte':
+            if self.info.device_family != DeviceFamily.NRF91:
+                raise NRFJProgException(
+                    'Detected bad MCU expect: lte (NRF91).')
+        else:
+            raise NRFJProgException(
+                f'Unknown MCU family ({self.info.device_family}).')
+
     def erase_uicr(self):
-        info = self.get_device_info()
         self.erase(EraseAction.ERASE_SECTOR_AND_UICR,
-                   info.uicr_address, info.uicr_address + 32)
+                   self.info.uicr_address, self.info.uicr_address + 32)
 
     def erase_all(self):
         self.erase(EraseAction.ERASE_ALL)
 
     def erase_flash(self):
-        info = self.get_device_info()
         self.erase(EraseAction.ERASE_SECTOR,
-                   info.code_address, (info.code_size // 32))
+                   self.info.code_address, (self.info.code_size // 32))
 
     def program(self, hex_path):
         program_options = ProgramOptions(
-            verify=VerifyAction.VERIFY_NONE,
+            verify=VerifyAction.VERIFY_READ,
             erase_action=EraseAction.ERASE_SECTOR,
             qspi_erase_action=EraseAction.ERASE_NONE,
             reset=ResetAction.RESET_SYSTEM
@@ -53,13 +65,11 @@ class NRFJProg(HighLevel.DebugProbe):
         super().program(hex_path, program_options)
 
     def write_uicr(self, buffer: bytes):
-        info = self.get_device_info()
         self.erase_uicr()
-        self.write(info.uicr_address + 0x80, buffer)
+        self.write(self.info.uicr_address + 0x80, buffer)
 
     def read_uicr(self):
-        info = self.get_device_info()
-        return self.read(info.uicr_address + 0x80, 128)
+        return self.read(self.info.uicr_address + 0x80, 128)
 
 
 def get_api():

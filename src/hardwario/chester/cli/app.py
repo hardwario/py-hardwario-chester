@@ -21,7 +21,7 @@ def cli(ctx):
 @click.argument('hex_file', metavar="HEX_FILE")
 def command_flash(hex_file):
     '''Flash application firmware (preserves UICR area).'''
-    prog = NRFJProg()
+    prog = NRFJProg('app')
     prog.program(hex_file)
 
 
@@ -29,7 +29,7 @@ def command_flash(hex_file):
 @click.option('--all', is_flag=True, help="Erase application firmware incl. UICR area.")
 def command_erase(all):
     '''Erase application firmware w/o UICR area.'''
-    prog = NRFJProg()
+    prog = NRFJProg('app')
     if all:
         prog.erase_all()
     else:
@@ -39,7 +39,7 @@ def command_erase(all):
 @cli.command('reset')
 def command_reset():
     '''Reset application firmware.'''
-    prog = NRFJProg()
+    prog = NRFJProg('app')
     prog.reset()
 
 
@@ -65,7 +65,7 @@ def group_pib(ctx):
 def command_pib_read(out_json):
     '''Read HARDWARIO Product Information Block from UICR.'''
 
-    prog = NRFJProg()
+    prog = NRFJProg('app')
     buffer = prog.read_uicr()
     pib = PIB(buffer)
 
@@ -100,7 +100,7 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
 
     logger.debug('write uicr: %s', buffer.hex())
 
-    prog = NRFJProg()
+    prog = NRFJProg('app')
     prog.write_uicr(buffer)
 
 
@@ -116,7 +116,7 @@ def group_uicr():
 def command_uicr_read(format, file):
     '''Read generic UICR flash area to <FILE> or stdout.'''
 
-    prog = NRFJProg()
+    prog = NRFJProg('app')
     buffer = prog.read_uicr()
 
     if format == 'hex':
@@ -145,7 +145,7 @@ def command_uicr_write(format, file):
 
     logger.debug('write uicr: %s', buffer.hex())
 
-    prog = NRFJProg()
+    prog = NRFJProg('app')
     prog.write_uicr(buffer)
 
 
