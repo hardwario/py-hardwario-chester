@@ -30,41 +30,37 @@ def command_flash(ctx, file):
         zf = zipfile.ZipFile(file)
         namelist = zf.namelist()
         if len(namelist) == 2:
-            if not 'modem.zip' in namelist or not 'application.hex' in namelist:
+            if 'modem.zip' not in namelist or 'application.hex' not in namelist:
                 raise Exception('Invalid file.')
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 zf.extractall(temp_dir)
-                prog = ctx.obj['prog']
-                prog.open()
-                click.echo(f'Flash: modem.zip')
-                prog.program(os.path.join(temp_dir, 'modem.zip'))
-                click.echo(f'Flash: application.hex')
-                prog.program(os.path.join(temp_dir, 'application.hex'))
+                with ctx.obj['prog'] as prog:
+                    click.echo(f'Flash: modem.zip')
+                    prog.program(os.path.join(temp_dir, 'modem.zip'))
+                    click.echo(f'Flash: application.hex')
+                    prog.program(os.path.join(temp_dir, 'application.hex'))
                 return
 
-    prog = ctx.obj['prog']
-    prog.open()
-    click.echo(f'Flash: {file}')
-    prog.program(file)
+    with ctx.obj['prog'] as prog:
+        click.echo(f'Flash: {file}')
+        prog.program(file)
 
 
 @cli.command('erase')
 @click.pass_context
 def command_erase(ctx):
     '''Erase modem firmware.'''
-    prog = ctx.obj['prog']
-    prog.open()
-    prog.erase_all()
+    with ctx.obj['prog'] as prog:
+        prog.erase_all()
 
 
 @ cli.command('reset')
 @ click.pass_context
 def command_reset(ctx):
     '''Reset modem firmware.'''
-    prog = ctx.obj['prog']
-    prog.open()
-    prog.reset()
+    with ctx.obj['prog'] as prog:
+        prog.reset()
 
 
 def main():
