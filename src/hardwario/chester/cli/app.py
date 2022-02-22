@@ -11,25 +11,30 @@ logger = logging.getLogger(__name__)
 
 
 @click.group(name='app')
+@click.option('--nrfjprog-log', is_flag=True, help="Enable NRFJProg log.")
 @click.pass_context
-def cli(ctx):
+def cli(ctx, nrfjprog_log):
     '''Application SoC commands.'''
-    pass
+    ctx.obj['prog'] = NRFJProg('app', log=nrfjprog_log)
 
 
 @cli.command('flash')
 @click.argument('hex_file', metavar="HEX_FILE")
-def command_flash(hex_file):
+@click.pass_context
+def command_flash(ctx, hex_file):
     '''Flash application firmware (preserves UICR area).'''
-    prog = NRFJProg('app')
+    prog = ctx.obj['prog']
+    prog.open()
     prog.program(hex_file)
 
 
 @cli.command('erase')
 @click.option('--all', is_flag=True, help="Erase application firmware incl. UICR area.")
-def command_erase(all):
+@click.pass_context
+def command_erase(ctx, all):
     '''Erase application firmware w/o UICR area.'''
-    prog = NRFJProg('app')
+    prog = ctx.obj['prog']
+    prog.open()
     if all:
         prog.erase_all()
     else:
@@ -37,9 +42,11 @@ def command_erase(all):
 
 
 @cli.command('reset')
-def command_reset():
+@click.pass_context
+def command_reset(ctx):
     '''Reset application firmware.'''
-    prog = NRFJProg('app')
+    prog = ctx.obj['prog']
+    prog.open()
     prog.reset()
 
 
@@ -62,10 +69,12 @@ def group_pib(ctx):
 
 @group_pib.command('read')
 @click.option('--json', 'out_json', is_flag=True, help='Output in JSON format.')
-def command_pib_read(out_json):
+@click.pass_context
+def command_pib_read(ctx, out_json):
     '''Read HARDWARIO Product Information Block from UICR.'''
 
-    prog = NRFJProg('app')
+    prog = ctx.obj['prog']
+    prog.open()
     buffer = prog.read_uicr()
     pib = PIB(buffer)
 
@@ -100,7 +109,8 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
 
     logger.debug('write uicr: %s', buffer.hex())
 
-    prog = NRFJProg('app')
+    prog = ctx.obj['prog']
+    prog.open()
     prog.write_uicr(buffer)
 
 
@@ -113,10 +123,12 @@ def group_uicr():
 @group_uicr.command('read')
 @click.option('--format', type=click.Choice(['hex', 'bin']), help='Specify input format.', required=True)
 @click.argument('file', type=click.File('wb'))
-def command_uicr_read(format, file):
+@click.pass_context
+def command_uicr_read(ctx, format, file):
     '''Read generic UICR flash area to <FILE> or stdout.'''
 
-    prog = NRFJProg('app')
+    prog = ctx.obj['prog']
+    prog.open()
     buffer = prog.read_uicr()
 
     if format == 'hex':
@@ -129,7 +141,8 @@ def command_uicr_read(format, file):
 @group_uicr.command('write')
 @click.option('--format', type=click.Choice(['hex', 'bin']), help='Specify input format.', required=True)
 @click.argument('file', type=click.File('rb'))
-def command_uicr_write(format, file):
+@click.pass_context
+def command_uicr_write(ctx, format, file):
     '''Write generic UICR flash area from <FILE> or stdout.'''
 
     buffer = file.read()
@@ -145,7 +158,8 @@ def command_uicr_write(format, file):
 
     logger.debug('write uicr: %s', buffer.hex())
 
-    prog = NRFJProg('app')
+    prog = ctx.obj['prog']
+    prog.open()
     prog.write_uicr(buffer)
 
 
