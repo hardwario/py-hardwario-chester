@@ -1,6 +1,6 @@
 import logging
 import click
-from . import app
+from . import app, lte
 
 logger = logging.getLogger(__name__)
 
@@ -12,3 +12,4 @@ def cli(ctx):
 
 
 cli.add_command(app.cli)
+cli.add_command(lte.cli)
