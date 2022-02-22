@@ -1,5 +1,5 @@
 import logging
-from pynrfjprog import HighLevel, APIError
+from pynrfjprog import HighLevel, APIError, LowLevel
 from pynrfjprog.Parameters import *
 from .pib import PIB
 
@@ -13,7 +13,15 @@ class NRFJProgException(Exception):
 
 class NRFJProg(HighLevel.DebugProbe):
 
-    def __init__(self, device_family, jlin_sn=None, clock_speed=None, log=True, log_suffix=None):
+    def __init__(self, mcu, jlin_sn=None, clock_speed=None, log=False, log_suffix=None):
+        self.mcu = mcu
+        self.jlin_sn = jlin_sn
+        self.clock_speed = clock_speed
+        self.log = log
+        self.log_suffix = log_suffix
+
+    def open(self):
+        jlin_sn = self.jlin_sn
         api = get_api()
         if jlin_sn is None:
             probes = api.get_connected_probes()
@@ -22,7 +30,7 @@ class NRFJProg(HighLevel.DebugProbe):
             jlin_sn = probes[0]
 
         try:
-            super().__init__(api, jlin_sn, clock_speed=clock_speed, log=log)
+            super().__init__(api, jlin_sn, clock_speed=self.clock_speed, log=self.log)
         except APIError.APIError as e:
             if e.err_code == APIError.NrfjprogdllErr.LOW_VOLTAGE:
                 raise NRFJProgException(
@@ -32,11 +40,11 @@ class NRFJProg(HighLevel.DebugProbe):
 
         self.info = self.get_device_info()
 
-        if device_family == 'app':
+        if self.mcu == 'app':
             if self.info.device_family != DeviceFamily.NRF52:
                 raise NRFJProgException(
                     'Detected bad MCU expect: app (NRF52).')
-        elif device_family == 'lte':
+        elif self.mcu == 'lte':
             if self.info.device_family != DeviceFamily.NRF91:
                 raise NRFJProgException(
                     'Detected bad MCU expect: lte (NRF91).')
