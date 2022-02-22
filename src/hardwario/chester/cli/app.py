@@ -4,7 +4,7 @@ import click
 import sys
 import json
 from ..pib import PIB, PIBException
-from ..nrfjprog import NRFJProg
+from ..nrfjprog import NRFJProg, HighNRFJProg
 
 
 logger = logging.getLogger(__name__)
@@ -23,9 +23,8 @@ def cli(ctx, nrfjprog_log):
 @click.pass_context
 def command_flash(ctx, hex_file):
     '''Flash application firmware (preserves UICR area).'''
-    prog = ctx.obj['prog']
-    prog.open()
-    prog.program(hex_file)
+    with ctx.obj['prog'] as prog:
+        prog.program(hex_file)
 
 
 @cli.command('erase')
@@ -33,21 +32,22 @@ def command_flash(ctx, hex_file):
 @click.pass_context
 def command_erase(ctx, all):
     '''Erase application firmware w/o UICR area.'''
-    prog = ctx.obj['prog']
-    prog.open()
-    if all:
-        prog.erase_all()
-    else:
-        prog.erase_flash()
+    with ctx.obj['prog'] as prog:
+        if all:
+            prog.erase_all()
+        else:
+            prog.erase_flash()
 
 
 @cli.command('reset')
+@click.option('--halt', is_flag=True, help="Halt program.")
 @click.pass_context
-def command_reset(ctx):
+def command_reset(ctx, halt):
     '''Reset application firmware.'''
-    prog = ctx.obj['prog']
-    prog.open()
-    prog.reset()
+    with ctx.obj['prog'] as prog:
+        prog.reset()
+        if halt:
+            prog.halt()
 
 
 def validate_pib_param(ctx, param, value):
@@ -73,9 +73,9 @@ def group_pib(ctx):
 def command_pib_read(ctx, out_json):
     '''Read HARDWARIO Product Information Block from UICR.'''
 
-    prog = ctx.obj['prog']
-    prog.open()
-    buffer = prog.read_uicr()
+    with ctx.obj['prog'] as prog:
+        buffer = prog.read_uicr()
+
     pib = PIB(buffer)
 
     if out_json:
@@ -109,9 +109,8 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
 
     logger.debug('write uicr: %s', buffer.hex())
 
-    prog = ctx.obj['prog']
-    prog.open()
-    prog.write_uicr(buffer)
+    with ctx.obj['prog'] as prog:
+        prog.write_uicr(buffer)
 
 
 @cli.group(name='uicr')
@@ -127,9 +126,8 @@ def group_uicr():
 def command_uicr_read(ctx, format, file):
     '''Read generic UICR flash area to <FILE> or stdout.'''
 
-    prog = ctx.obj['prog']
-    prog.open()
-    buffer = prog.read_uicr()
+    with ctx.obj['prog'] as prog:
+        buffer = prog.read_uicr()
 
     if format == 'hex':
         file.write(buffer.hex().encode())
@@ -158,9 +156,8 @@ def command_uicr_write(ctx, format, file):
 
     logger.debug('write uicr: %s', buffer.hex())
 
-    prog = ctx.obj['prog']
-    prog.open()
-    prog.write_uicr(buffer)
+    with ctx.obj['prog'] as prog:
+        prog.write_uicr(buffer)
 
 
 def main():
