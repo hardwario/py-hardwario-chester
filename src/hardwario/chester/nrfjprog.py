@@ -11,7 +11,93 @@ class NRFJProgException(Exception):
     pass
 
 
-class NRFJProg(HighLevel.DebugProbe):
+class NRFJProg(LowLevel.API):
+    def __init__(self, mcu, jlin_sn=None, clock_speed=None, log=False, log_suffix=None):
+        self.mcu = mcu
+        self.jlin_sn = jlin_sn
+        self.clock_speed = clock_speed
+        self.log = log
+        self.log_suffix = log_suffix
+
+    def open(self):
+        try:
+            super().__init__(LowLevel.DeviceFamily.UNKNOWN, log=self.log)
+            super().open()
+
+            if self.jlin_sn is not None:
+                self.connect_to_emu_with_snr(self.jlin_sn)
+            else:
+                self.connect_to_emu_without_snr()
+
+        except APIError.APIError as e:
+            if e.err_code == APIError.NrfjprogdllErr.NO_EMULATOR_CONNECTED:
+                raise NRFJProgException(
+                    'No J-Link found (check USB cable)')
+            if e.err_code == APIError.NrfjprogdllErr.LOW_VOLTAGE:
+                raise NRFJProgException(
+                    'Detected low voltage on J-Link (check power supply and cable)')
+            raise NRFJProgException(str(e))
+
+        device_family = self.read_device_family()
+
+        if self.mcu == 'app':
+            if device_family != 'NRF52':
+                raise NRFJProgException(
+                    'Detected bad MCU expect: app (NRF52)')
+        elif self.mcu == 'lte':
+            if device_family != 'NRF91':
+                raise NRFJProgException(
+                    'Detected bad MCU expect: lte (NRF91)')
+        else:
+            raise NRFJProgException(
+                f'Unknown MCU family ({device_family}).')
+
+        self.select_family(device_family)
+
+    def close(self):
+        super().close()
+
+    def reset(self):
+        self.sys_reset()
+
+    def erase_flash(self):
+        self.disable_bprot()
+        for des in self.read_memory_descriptors(False):
+            if des.type == MemoryType.CODE:
+                page_size = des.size // des.num_pages
+                for addr in range(0, des.size, page_size):
+                    self.erase_page(addr)
+
+    def program(self, file_path):
+        print('erase')
+        self.erase_file(file_path, chip_erase_mode=EraseAction.ERASE_SECTOR)
+        print('flash')
+        self.program_file(file_path)
+        print('verify')
+        self.verify_file(file_path)
+
+    def get_uicr_address(self):
+        for des in self.read_memory_descriptors(False):
+            if des.type == MemoryType.UICR:
+                return des.start
+        raise NRFJProgException('UICR descriptor not found.')
+
+    def write_uicr(self, buffer: bytes):
+        self.erase_uicr()
+        self.write(self.get_uicr_address() + 0x80, buffer, True)
+
+    def read_uicr(self):
+        return bytes(self.read(self.get_uicr_address() + 0x80, 128))
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+
+class HighNRFJProg(HighLevel.DebugProbe):
 
     def __init__(self, mcu, jlin_sn=None, clock_speed=None, log=False, log_suffix=None):
         self.mcu = mcu
@@ -39,18 +125,19 @@ class NRFJProg(HighLevel.DebugProbe):
                 raise NRFJProgException(str(e))
 
         self.info = self.get_device_info()
+        # print(self.info.__dict__)
 
         if self.mcu == 'app':
             if self.info.device_family != DeviceFamily.NRF52:
                 raise NRFJProgException(
-                    'Detected bad MCU expect: app (NRF52).')
+                    'Detected bad MCU expect: app (NRF52)')
         elif self.mcu == 'lte':
             if self.info.device_family != DeviceFamily.NRF91:
                 raise NRFJProgException(
-                    'Detected bad MCU expect: lte (NRF91).')
+                    'Detected bad MCU expect: lte (NRF91)')
         else:
             raise NRFJProgException(
-                f'Unknown MCU family ({self.info.device_family}).')
+                f'Unknown MCU family ({self.info.device_family})')
 
     def erase_uicr(self):
         self.erase(EraseAction.ERASE_SECTOR_AND_UICR,
@@ -111,3 +198,4 @@ def get_probe(jlin_sn=None):
 # https://www.segger.com/downloads/jlink/JLink_Linux_x86_64.deb
 # https://www.segger.com/downloads/jlink/JLink_Linux_arm.tgz
 # https://www.segger.com/downloads/jlink
+# {'device_type': < DeviceVersion.NRF52840_xxAA_REV2: 86523907 > , 'device_family': < DeviceFamily.NRF52: 1 > , 'code_address': 0, 'code_page_size': 4096, 'code_size': 1048576, 'uicr_address': 268439552, 'info_page_size': 4096, 'code_ram_present': True, 'code_ram_address': 8388608, 'data_ram_address': 536870912, 'ram_size': 262144, 'qspi_present': True, 'xip_address': 301989888, 'xip_size': 0, 'pin_reset_pin': 18, 'dll_ret_code': 0}
