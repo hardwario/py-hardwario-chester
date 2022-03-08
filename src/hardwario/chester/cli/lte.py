@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.group(name='lte')
-@click.option('--nrfjprog-log', is_flag=True, help="Enable NRFJProg log.")
+@click.option('--nrfjprog-log', is_flag=True, help='Enable NRFJProg log.')
 @click.pass_context
 def cli(ctx, nrfjprog_log):
     '''LTE Modem SoC commands.'''
@@ -21,10 +21,19 @@ def cli(ctx, nrfjprog_log):
 
 
 @cli.command('flash')
-@click.argument('file', metavar="FILE")
+@click.argument('file', metavar='FILE', type=click.Path(exists=True))
 @click.pass_context
 def command_flash(ctx, file):
     '''Flash modem firmware.'''
+
+    def progress(text, ctx={'len': 0}):
+        if ctx['len']:
+            click.echo('\r' + (' ' * ctx['len']) + '\r', nl=False)
+        if not text:
+            return
+        text = f'  {text} ...'
+        ctx['len'] = len(text)
+        click.echo(text, nl=False)
 
     if file.endswith('.zip'):
         zf = zipfile.ZipFile(file)
@@ -37,14 +46,17 @@ def command_flash(ctx, file):
                 zf.extractall(temp_dir)
                 with ctx.obj['prog'] as prog:
                     click.echo(f'Flash: modem.zip')
-                    prog.program(os.path.join(temp_dir, 'modem.zip'))
+                    prog.program(os.path.join(temp_dir, 'modem.zip'), progress=progress)
+                    progress(None)
                     click.echo(f'Flash: application.hex')
-                    prog.program(os.path.join(temp_dir, 'application.hex'))
-                return
+                    prog.program(os.path.join(temp_dir, 'application.hex'), progress=progress)
+    else:
+        with ctx.obj['prog'] as prog:
+            click.echo(f'Flash: {file}')
+            prog.program(file, progress=progress)
 
-    with ctx.obj['prog'] as prog:
-        click.echo(f'Flash: {file}')
-        prog.program(file)
+    progress(None)
+    click.echo('Successfully completed')
 
 
 @cli.command('erase')
