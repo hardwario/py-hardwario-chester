@@ -3,6 +3,7 @@ import re
 import click
 import sys
 import json
+
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.group(name='app')
-@click.option('--nrfjprog-log', is_flag=True, help="Enable NRFJProg log.")
+@click.option('--nrfjprog-log', is_flag=True, help='Enable NRFJProg log.')
 @click.pass_context
 def cli(ctx, nrfjprog_log):
     '''Application SoC commands.'''
@@ -19,16 +20,29 @@ def cli(ctx, nrfjprog_log):
 
 
 @cli.command('flash')
-@click.argument('hex_file', metavar="HEX_FILE")
+@click.option('--halt', is_flag=True, help='Halt program.')
+@click.argument('hex_file', metavar='HEX_FILE', type=click.Path(exists=True))
 @click.pass_context
-def command_flash(ctx, hex_file):
+def command_flash(ctx, halt, hex_file):
     '''Flash application firmware (preserves UICR area).'''
+
+    def progress(text, ctx={'len': 0}):
+        if ctx['len']:
+            click.echo('\r' + (' ' * ctx['len']) + '\r', nl=False)
+        if not text:
+            return
+        text = f'{text} ...'
+        ctx['len'] = len(text)
+        click.echo(text, nl=False)
+
     with ctx.obj['prog'] as prog:
-        prog.program(hex_file)
+        prog.program(hex_file, halt, progress=progress)
+    progress(None)
+    click.echo('Successfully completed')
 
 
 @cli.command('erase')
-@click.option('--all', is_flag=True, help="Erase application firmware incl. UICR area.")
+@click.option('--all', is_flag=True, help='Erase application firmware incl. UICR area.')
 @click.pass_context
 def command_erase(ctx, all):
     '''Erase application firmware w/o UICR area.'''
@@ -40,7 +54,7 @@ def command_erase(ctx, all):
 
 
 @cli.command('reset')
-@click.option('--halt', is_flag=True, help="Halt program.")
+@click.option('--halt', is_flag=True, help='Halt program.')
 @click.pass_context
 def command_reset(ctx, halt):
     '''Reset application firmware.'''
@@ -101,7 +115,7 @@ def command_pib_read(ctx, out_json):
 @click.pass_context
 def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, serial_number, claim_token, ble_passkey):
     '''Write HARDWARIO Product Information Block to UICR.'''
-    logger.debug("command_pib_write: %s", (serial_number,
+    logger.debug('command_pib_write: %s', (serial_number,
                  vendor_name, product_name, hw_revision, hw_variant, claim_token, ble_passkey))
 
     pib = ctx.obj['pib']
