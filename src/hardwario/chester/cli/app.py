@@ -31,14 +31,11 @@ def command_flash(ctx, halt, hex_file):
             click.echo('\r' + (' ' * ctx['len']) + '\r', nl=False)
         if not text:
             return
-        text = f'{text} ...'
         ctx['len'] = len(text)
-        click.echo(text, nl=False)
+        click.echo(text, nl=text == 'Successfully completed')
 
     with ctx.obj['prog'] as prog:
         prog.program(hex_file, halt, progress=progress)
-    progress(None)
-    click.echo('Successfully completed')
 
 
 @cli.command('erase')

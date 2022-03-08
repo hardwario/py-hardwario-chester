@@ -31,9 +31,9 @@ def command_flash(ctx, file):
             click.echo('\r' + (' ' * ctx['len']) + '\r', nl=False)
         if not text:
             return
-        text = f'  {text} ...'
+        text = f'  {text}'
         ctx['len'] = len(text)
-        click.echo(text, nl=False)
+        click.echo(text, nl=text == 'Successfully completed')
 
     if file.endswith('.zip'):
         zf = zipfile.ZipFile(file)
