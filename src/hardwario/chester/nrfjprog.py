@@ -68,13 +68,25 @@ class NRFJProg(LowLevel.API):
                 for addr in range(0, des.size, page_size):
                     self.erase_page(addr)
 
-    def program(self, file_path):
-        print('erase')
+    def program(self, file_path, halt=False, progress=lambda x: None):
+        progress('erase')
         self.erase_file(file_path, chip_erase_mode=EraseAction.ERASE_SECTOR)
-        print('flash')
+
+        progress('flash')
         self.program_file(file_path)
-        print('verify')
+
+        progress('verify')
         self.verify_file(file_path)
+
+        progress('reset')
+        self.reset()
+
+        if halt:
+            progress('halt')
+            self.halt()
+        else:
+            progress('go')
+            self.go()
 
     def get_uicr_address(self):
         for des in self.read_memory_descriptors(False):
