@@ -5,8 +5,8 @@ description = "HARDWARIO CHESTER"
 authors = ["Karel Blavka <karel.blavka@hardwario.com>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/hardwario/py-hardwario-common"
-repository = "https://github.com/hardwario/py-hardwario-common"
+homepage = "https://github.com/hardwario/py-hardwario-chester"
+repository = "https://github.com/hardwario/py-hardwario-chester"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: MIT License",
@@ -41,8 +41,9 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.6"
 click = "^8.0.3"
-pynrfjprog = "^10.15.2"
+pynrfjprog = "=10.15.2"
 hardwario-common = "^1.3.0"
+docker = "^5.0.3"
 
 [tool.poetry.dev-dependencies]
 #hardwario-common = {path = "../py-hardwario-common", develop = true}
