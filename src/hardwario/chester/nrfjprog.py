@@ -18,6 +18,7 @@ class NRFJProg(LowLevel.API):
         self.clock_speed = clock_speed
         self.log = log
         self.log_suffix = log_suffix
+        self._rtt_channels = None
 
     def open(self):
         try:
@@ -53,6 +54,8 @@ class NRFJProg(LowLevel.API):
                 f'Unknown MCU family ({device_family}).')
 
         self.select_family(device_family)
+
+        # print(self.read_device_info())
 
     def close(self):
         super().close()
@@ -101,6 +104,74 @@ class NRFJProg(LowLevel.API):
 
     def read_uicr(self):
         return bytes(self.read(self.get_uicr_address() + 0x80, 128))
+
+    def rtt_start(self):
+        if self._rtt_channels is not None:
+            return
+
+        super().rtt_start()
+        logger.debug('RTT Start')
+
+        for _ in range(100):
+            if self.rtt_is_control_block_found():
+                logger.debug('RTT control block found')
+                break
+            time.sleep(0.1)
+        else:
+            raise NRFJProgException('Can not found RTT start block')
+
+        channel_count = self.rtt_read_channel_count()
+        logger.debug(f'RTT channel count {channel_count}')
+
+        channels = {}
+        for index in range(channel_count[0]):
+            name, size = self.rtt_read_channel_info(index, RTTChannelDirection.DOWN_DIRECTION)
+            if size < 1:
+                continue
+            channels[name] = {
+                'down': {
+                    'index': index,
+                    'size': size
+                }
+            }
+        for index in range(channel_count[1]):
+            name, size = self.rtt_read_channel_info(index, RTTChannelDirection.UP_DIRECTION)
+            if size < 1:
+                continue
+            if name not in channels:
+                channels[name] = {}
+            channels[name]['up'] = {
+                'index': index,
+                'size': size
+            }
+
+        self._rtt_channels = channels
+        return self._rtt_channels
+
+    def rtt_stop(self):
+        if self._rtt_channels is None:
+            return
+
+        # super().rtt_stop() #  WHY: if call rtt_stop then Can not found RTT start block after rtt_start, needs reset for work
+        self._rtt_channels = None
+        logger.debug('RTT Stop')
+
+    def rtt_write(self, channel, msg, encoding='utf-8'):
+        if self._rtt_channels is None:
+            raise NRFJProgException('Can not write, try call rtt_start first')
+        if isinstance(channel, str):
+            channel = self._rtt_channels[channel]['down']['index']
+        return super().rtt_write(channel, msg, encoding)
+
+    def rtt_read(self, channel, length=None, encoding='utf-8'):
+        if self._rtt_channels is None:
+            raise NRFJProgException('Can not read, try call rtt_start first')
+        if isinstance(channel, str):
+            ch = self._rtt_channels[channel]['up']
+            if length is None:
+                length = ch['size']
+            channel = ch['index']
+        return super().rtt_read(channel, length, encoding)
 
     def __enter__(self):
         self.open()
