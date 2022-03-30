@@ -6,6 +6,7 @@ import json
 
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg
+from ..console import Console
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,19 @@ def command_reset(ctx, halt):
         prog.reset()
         if halt:
             prog.halt()
+
+
+@cli.command('console')
+@click.option('--reset', is_flag=True, help='Reset application firmware.')
+@click.pass_context
+def command_console(ctx, reset):
+    '''Reset application firmware.'''
+    with ctx.obj['prog'] as prog:
+        console = Console(prog)
+        if reset:
+            prog.reset()
+            prog.go()
+        console.run()
 
 
 def validate_pib_param(ctx, param, value):

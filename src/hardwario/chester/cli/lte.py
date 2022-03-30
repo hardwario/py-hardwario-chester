@@ -1,5 +1,4 @@
 import logging
-from tkinter.messagebox import NO
 import click
 import tempfile
 import zipfile
