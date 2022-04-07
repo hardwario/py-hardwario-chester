@@ -1,7 +1,6 @@
 import logging
-import re
 import click
-import sys
+import os
 import json
 
 from ..pib import PIB, PIBException
@@ -62,17 +61,23 @@ def command_reset(ctx, halt):
             prog.halt()
 
 
+default_history_file = os.path.expanduser("~/.chester_history")
+default_console_file = os.path.expanduser("~/.chester_console")
+
+
 @cli.command('console')
 @click.option('--reset', is_flag=True, help='Reset application firmware.')
+@click.option('--history-file', type=click.Path(writable=True), show_default=True, default=default_history_file)
+@click.option('--console-file', type=click.File('a', 'utf-8'), show_default=True, default=default_console_file)
 @click.pass_context
-def command_console(ctx, reset):
-    '''Reset application firmware.'''
+def command_console(ctx, reset, history_file, console_file):
+    '''Start interactive console for shell and logging.'''
+    console = Console(history_file=history_file)
     with ctx.obj['prog'] as prog:
-        console = Console(prog)
         if reset:
             prog.reset()
             prog.go()
-        console.run()
+        console.run(prog, console_file)
 
 
 def validate_pib_param(ctx, param, value):

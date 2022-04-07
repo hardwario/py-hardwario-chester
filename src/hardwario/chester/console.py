@@ -1,6 +1,9 @@
+from asyncio.log import logger
 import threading
-import time
+import os
+import logging
 from functools import partial
+from datetime import datetime
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.key_binding import KeyBindings
@@ -13,13 +16,18 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
+from .nrfjprog import NRFJProg
+
+logger = logging.getLogger(__name__)
+
+
+def getTime():
+    return datetime.now().strftime('%Y.%m.%d %H:%M:%S.%f')[:23]
 
 
 class Console:
 
-    def __init__(self, prog) -> None:
-
-        self.prog = prog
+    def __init__(self, history_file):
 
         self.logger_buffer = Buffer(read_only=True)
         self.terminal_buffer = Buffer(read_only=True)
@@ -29,7 +37,11 @@ class Console:
         logger_window = Window(BufferControl(buffer=self.logger_buffer),
                                right_margins=[ScrollbarMargin()])
 
-        input_history = FileHistory(".console_history")
+        logger.debug(f'history_file: {history_file}')
+
+        os.makedirs(os.path.dirname(history_file), exist_ok=True)
+
+        input_history = FileHistory(history_file)
         search_field = SearchToolbar(ignore_case=True)
 
         self.input_field = TextArea(
@@ -89,20 +101,28 @@ class Console:
 
         )
 
-    def run(self):
-        self.prog.rtt_start()
+    def run(self, prog: NRFJProg, console_file):
+        prog.rtt_start()
 
         def task_rtt_read(channel, buffer):
             try:
                 while 1:
-                    line = self.prog.rtt_read(channel)
+                    line = prog.rtt_read(channel)
                     if line:
                         # buffer.insert_text(line.replace('\r', ''))
+                        for sline in line.splitlines():
+                            console_file.write(getTime() + (' # ' if channel == 'Logger' else ' > '))
+                            console_file.write(sline)
+                            console_file.write('\n')
+                        console_file.flush()
+
                         line = line.replace('\r', '')
                         cpos = buffer.cursor_position + len(line)
                         buffer.set_document(Document(buffer.text + line, cpos), True)
             except Exception:
                 return
+
+        console_file.write(f'{ "*" * 80 }\n')
 
         t1 = threading.Thread(target=task_rtt_read, args=('Logger', self.logger_buffer))
         t2 = threading.Thread(target=task_rtt_read, args=('Terminal', self.terminal_buffer))
@@ -114,14 +134,15 @@ class Console:
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')
             # self.terminal_buffer.insert_text(line)
+            console_file.write(f'{getTime()} < {line}')
             text = self.terminal_buffer.text + line
             cpos = self.terminal_buffer.cursor_position + len(line)
             self.terminal_buffer.set_document(Document(text, cpos), True)
 
-            self.prog.rtt_write('Terminal', f'{buff.text}\n')
+            prog.rtt_write('Terminal', f'{buff.text}\n')
             return None
 
         self.input_field.accept_handler = accept
 
         self.app.run()
-        self.prog.rtt_stop()
+        prog.rtt_stop()
