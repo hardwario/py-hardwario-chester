@@ -46,6 +46,7 @@ hardwario-common = "^1.3.0"
 docker = "^5.0.3"
 pylink-square = "^0.12.0"
 prompt-toolkit = "^3.0.28"
+pyperclip = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 #hardwario-common = {path = "../py-hardwario-common", develop = true}
