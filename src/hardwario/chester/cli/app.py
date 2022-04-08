@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @click.group(name='app')
-@click.option('--nrfjprog-log', is_flag=True, help='Enable NRFJProg log.')
+@click.option('--nrfjprog-log', is_flag=True, help='Enable nrfjprog log.')
 @click.pass_context
 def cli(ctx, nrfjprog_log):
     '''Application SoC commands.'''
