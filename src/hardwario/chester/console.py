@@ -11,11 +11,13 @@ from prompt_toolkit.layout.containers import HSplit, VSplit, Window, WindowAlign
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.layout.margins import NumberedMargin, ScrollbarMargin
-from prompt_toolkit.widgets import SearchToolbar, TextArea, Frame, HorizontalLine, TextArea
+from prompt_toolkit.widgets import SearchToolbar, TextArea, Frame, HorizontalLine
 from prompt_toolkit.styles import Style
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
+from prompt_toolkit.application.current import get_app
 from .nrfjprog import NRFJProg
 
 logger = logging.getLogger(__name__)
@@ -29,13 +31,27 @@ class Console:
 
     def __init__(self, history_file):
 
-        self.logger_buffer = Buffer(read_only=True)
-        self.terminal_buffer = Buffer(read_only=True)
+        shell_search = SearchToolbar(ignore_case=True, vi_mode=True)
+        shell_window = TextArea(
+            scrollbar=True,
+            line_numbers=True,
+            focusable=True,
+            focus_on_click=True,
+            read_only=True,
+            search_field=shell_search
+        )
+        self.shell_buffer = shell_window.buffer
 
-        terminal_window = Window(BufferControl(buffer=self.terminal_buffer),
-                                 right_margins=[ScrollbarMargin()])
-        logger_window = Window(BufferControl(buffer=self.logger_buffer),
-                               right_margins=[ScrollbarMargin()])
+        logger_search = SearchToolbar(ignore_case=True, vi_mode=True)
+        logger_window = TextArea(
+            scrollbar=True,
+            line_numbers=True,
+            focusable=True,
+            focus_on_click=True,
+            read_only=True,
+            search_field=logger_search
+        )
+        self.logger_buffer = logger_window.buffer
 
         logger.debug(f'history_file: {history_file}')
 
@@ -51,7 +67,9 @@ class Console:
             multiline=False,
             wrap_lines=False,
             search_field=search_field,
-            history=input_history)
+            history=input_history,
+            focusable=True,
+            focus_on_click=True)
 
         def get_titlebar_text():
             return [
@@ -71,13 +89,19 @@ class Console:
                     [
                         Frame(HSplit(
                             [
-                                terminal_window,
+                                shell_window,
+                                shell_search,
                                 HorizontalLine(),
                                 self.input_field,
                                 search_field
                             ]
                         ), title="Shell"),
-                        Frame(logger_window, title="Log"),
+                        Frame(HSplit(
+                            [
+                                logger_window,
+                                logger_search
+                            ]
+                        ), title="Log"),
                     ]
                 )
             ]
@@ -85,8 +109,18 @@ class Console:
 
         bindings = KeyBindings()
 
+        @bindings.add("c-insert", eager=True)  # TODO: check
         @bindings.add("c-c", eager=True)
-        @bindings.add("c-q", eager=True)
+        def do_copy(event):
+            if event.app.layout.has_focus(shell_window):
+                data = shell_window.buffer.copy_selection()
+                event.app.clipboard.set_data(data)
+
+            elif event.app.layout.has_focus(logger_window):
+                data = logger_window.buffer.copy_selection()
+                event.app.clipboard.set_data(data)
+
+        @ bindings.add("c-q", eager=True)
         def _(event):
             event.app.exit()
 
@@ -98,7 +132,8 @@ class Console:
             key_bindings=bindings,
             mouse_support=True,
             full_screen=True,
-
+            enable_page_navigation_bindings=True,
+            clipboard=PyperclipClipboard()
         )
 
     def run(self, prog: NRFJProg, console_file):
@@ -117,15 +152,14 @@ class Console:
                         console_file.flush()
 
                         line = line.replace('\r', '')
-                        cpos = buffer.cursor_position + len(line)
-                        buffer.set_document(Document(buffer.text + line, cpos), True)
+                        buffer.set_document(Document(buffer.text + line, None), True)
             except Exception:
                 return
 
         console_file.write(f'{ "*" * 80 }\n')
 
         t1 = threading.Thread(target=task_rtt_read, args=('Logger', self.logger_buffer))
-        t2 = threading.Thread(target=task_rtt_read, args=('Terminal', self.terminal_buffer))
+        t2 = threading.Thread(target=task_rtt_read, args=('Terminal', self.shell_buffer))
         t1.daemon = True
         t2.daemon = True
         t1.start()
@@ -133,11 +167,10 @@ class Console:
 
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')
-            # self.terminal_buffer.insert_text(line)
+            # self.shell_buffer.insert_text(line)
             console_file.write(f'{getTime()} < {line}')
-            text = self.terminal_buffer.text + line
-            cpos = self.terminal_buffer.cursor_position + len(line)
-            self.terminal_buffer.set_document(Document(text, cpos), True)
+            text = self.shell_buffer.text + line
+            self.shell_buffer.set_document(Document(text, None), True)
 
             prog.rtt_write('Terminal', f'{buff.text}\n')
             return None
