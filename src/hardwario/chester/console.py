@@ -1,9 +1,9 @@
-from asyncio.log import logger
 import threading
 import os
 import logging
 from functools import partial
 from datetime import datetime
+from loguru import logger
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.key_binding import KeyBindings
@@ -18,9 +18,7 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.application.current import get_app
-from .nrfjprog import NRFJProg
-
-logger = logging.getLogger(__name__)
+from .nrfjprog import NRFJProg, NRFJProgRTTNoChannels
 
 
 def getTime():
@@ -140,9 +138,12 @@ class Console:
         prog.rtt_start()
 
         def task_rtt_read(channel, buffer):
-            try:
-                while 1:
-                    line = prog.rtt_read(channel)
+            while prog.rtt_is_running:
+                with logger.catch(message='task_rtt_read'):
+                    try:
+                        line = prog.rtt_read(channel)
+                    except NRFJProgRTTNoChannels:
+                        return
                     if line:
                         # buffer.insert_text(line.replace('\r', ''))
                         for sline in line.splitlines():
@@ -153,8 +154,6 @@ class Console:
 
                         line = line.replace('\r', '')
                         buffer.set_document(Document(buffer.text + line, None), True)
-            except Exception:
-                return
 
         console_file.write(f'{ "*" * 80 }\n')
 

@@ -1,13 +1,16 @@
-import logging
+from loguru import logger
 from pynrfjprog import HighLevel, APIError, LowLevel
 from pynrfjprog.Parameters import *
 from .pib import PIB
 
 _api = None
-logger = logging.getLogger(__name__)
 
 
 class NRFJProgException(Exception):
+    pass
+
+
+class NRFJProgRTTNoChannels(NRFJProgException):
     pass
 
 
@@ -156,22 +159,29 @@ class NRFJProg(LowLevel.API):
         self._rtt_channels = None
         logger.debug('RTT Stop')
 
+    def rtt_is_running(self):
+        return self._rtt_channels is not None
+
     def rtt_write(self, channel, msg, encoding='utf-8'):
         if self._rtt_channels is None:
-            raise NRFJProgException('Can not write, try call rtt_start first')
+            raise NRFJProgRTTNoChannels('Can not write, try call rtt_start first')
         if isinstance(channel, str):
             channel = self._rtt_channels[channel]['down']['index']
+        logger.debug('channel: {} msg: {}', channel, repr(msg))
         return super().rtt_write(channel, msg, encoding)
 
-    def rtt_read(self, channel, length=None, encoding='utf-8'):
+    def rtt_read(self, channel, length=None, encoding='utf-8', ):
         if self._rtt_channels is None:
-            raise NRFJProgException('Can not read, try call rtt_start first')
+            raise NRFJProgRTTNoChannels('Can not read, try call rtt_start first')
         if isinstance(channel, str):
             ch = self._rtt_channels[channel]['up']
             if length is None:
                 length = ch['size']
             channel = ch['index']
-        return super().rtt_read(channel, length, encoding)
+        msg = super().rtt_read(channel, length, encoding)
+        if msg:
+            logger.debug('channel: {} msg: {}', channel, repr(msg))
+        return msg
 
     def __enter__(self):
         self.open()

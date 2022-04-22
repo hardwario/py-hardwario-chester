@@ -1,8 +1,5 @@
-import logging
 import re
 from hardwario.common.pib import PIB as PIBCommon, PIBException
-
-logger = logging.getLogger(__name__)
 
 
 class PIB(PIBCommon):

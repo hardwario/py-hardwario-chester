@@ -1,14 +1,10 @@
-import logging
 import click
 import tempfile
 import zipfile
-import re
 import os
+from loguru import logger
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg
-
-
-logger = logging.getLogger(__name__)
 
 
 @click.group(name='lte')

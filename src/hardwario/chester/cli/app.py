@@ -1,14 +1,10 @@
-import logging
 import click
 import os
 import json
-
+from loguru import logger
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg
 from ..console import Console
-
-
-logger = logging.getLogger(__name__)
 
 
 @click.group(name='app')
