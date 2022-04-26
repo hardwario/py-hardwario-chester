@@ -1,9 +1,11 @@
 import threading
 import os
+import asyncio
 import logging
 from functools import partial
 from datetime import datetime
 from loguru import logger
+from prompt_toolkit.eventloop.utils import get_event_loop
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.key_binding import KeyBindings
@@ -143,7 +145,7 @@ class Console:
         if 'Terminal' not in channels:
             raise Exception('Not found RTT Terminal channel')
 
-        def task_rtt_read(channel, buffer):
+        async def task_rtt_read(channel, buffer):
             while prog.rtt_is_running:
                 with logger.catch(message='task_rtt_read', reraise=True):
                     try:
@@ -160,15 +162,19 @@ class Console:
 
                         line = line.replace('\r', '')
                         buffer.set_document(Document(buffer.text + line, None), True)
+                    await asyncio.sleep(0.0001)
 
         console_file.write(f'{ "*" * 80 }\n')
 
-        t1 = threading.Thread(target=task_rtt_read, args=('Logger', self.logger_buffer))
-        t2 = threading.Thread(target=task_rtt_read, args=('Terminal', self.shell_buffer))
-        t1.daemon = True
-        t2.daemon = True
-        t1.start()
-        t2.start()
+        async def task_rtt_read_logger():
+            await task_rtt_read('Logger', self.logger_buffer)
+
+        async def task_rtt_read_terminal():
+            await task_rtt_read('Terminal', self.shell_buffer)
+
+        loop = get_event_loop()
+        loop.create_task(task_rtt_read_logger())
+        loop.create_task(task_rtt_read_terminal())
 
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')
@@ -183,4 +189,5 @@ class Console:
         self.input_field.accept_handler = accept
 
         self.app.run()
+
         prog.rtt_stop()
