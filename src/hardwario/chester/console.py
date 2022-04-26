@@ -135,11 +135,17 @@ class Console:
         )
 
     def run(self, prog: NRFJProg, console_file):
-        prog.rtt_start()
+        channels = prog.rtt_start()
+
+        if 'Logger' not in channels:
+            raise Exception('Not found RTT Logger channel')
+
+        if 'Terminal' not in channels:
+            raise Exception('Not found RTT Terminal channel')
 
         def task_rtt_read(channel, buffer):
             while prog.rtt_is_running:
-                with logger.catch(message='task_rtt_read'):
+                with logger.catch(message='task_rtt_read', reraise=True):
                     try:
                         line = prog.rtt_read(channel)
                     except NRFJProgRTTNoChannels:
