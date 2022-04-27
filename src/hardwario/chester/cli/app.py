@@ -68,6 +68,8 @@ default_console_file = os.path.expanduser("~/.chester_console")
 @click.pass_context
 def command_console(ctx, reset, history_file, console_file):
     '''Start interactive console for shell and logging.'''
+    logger.remove(2)  # Remove stderr logger
+
     console = Console(history_file=history_file)
     with ctx.obj['prog'] as prog:
         if reset:
