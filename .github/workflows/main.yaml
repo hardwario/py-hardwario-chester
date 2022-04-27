@@ -67,5 +67,5 @@ jobs:
           pip install poetry
           poetry install
           sed -r -i'' "s/\"1\.0\.0\"/\"$RELEASE_VERSION\"/g" pyproject.toml
-          sed -r -i'' "s/\"1\.0\.0\"/\"$RELEASE_VERSION\"/g" src/hardwario/chester/__init__.py
+          sed -r -i'' "s/'1\.0\.0'/'$RELEASE_VERSION'/g" src/hardwario/chester/__init__.py
           poetry publish --build
