@@ -162,7 +162,7 @@ class Console:
 
                         line = line.replace('\r', '')
                         buffer.set_document(Document(buffer.text + line, None), True)
-                    await asyncio.sleep(0.0001)
+                    await asyncio.sleep(0.05)
 
         console_file.write(f'{ "*" * 80 }\n')
 
