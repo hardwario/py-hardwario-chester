@@ -63,10 +63,11 @@ default_console_file = os.path.expanduser("~/.chester_console")
 
 @cli.command('console')
 @click.option('--reset', is_flag=True, help='Reset application firmware.')
+@click.option('--latency', type=int, help='Latency for RTT readout in ms.', show_default=True, default=50)
 @click.option('--history-file', type=click.Path(writable=True), show_default=True, default=default_history_file)
 @click.option('--console-file', type=click.File('a', 'utf-8'), show_default=True, default=default_console_file)
 @click.pass_context
-def command_console(ctx, reset, history_file, console_file):
+def command_console(ctx, reset, latency, history_file, console_file):
     '''Start interactive console for shell and logging.'''
     logger.remove(2)  # Remove stderr logger
 
@@ -75,7 +76,7 @@ def command_console(ctx, reset, history_file, console_file):
         if reset:
             prog.reset()
             prog.go()
-        console.run(prog, console_file)
+        console.run(prog, console_file, latency=latency)
 
 
 def validate_pib_param(ctx, param, value):

@@ -136,7 +136,7 @@ class Console:
             clipboard=PyperclipClipboard()
         )
 
-    def run(self, prog: NRFJProg, console_file):
+    def run(self, prog: NRFJProg, console_file, latency=50):
         channels = prog.rtt_start()
 
         if 'Logger' not in channels:
@@ -144,6 +144,8 @@ class Console:
 
         if 'Terminal' not in channels:
             raise Exception('Not found RTT Terminal channel')
+
+        rtt_read_delay = latency / 1000.0
 
         async def task_rtt_read(channel, buffer):
             while prog.rtt_is_running:
@@ -162,7 +164,7 @@ class Console:
 
                         line = line.replace('\r', '')
                         buffer.set_document(Document(buffer.text + line, None), True)
-                    await asyncio.sleep(0.05)
+                    await asyncio.sleep(rtt_read_delay)
 
         console_file.write(f'{ "*" * 80 }\n')
 
@@ -175,6 +177,13 @@ class Console:
         loop = get_event_loop()
         loop.create_task(task_rtt_read_logger())
         loop.create_task(task_rtt_read_terminal())
+
+        # t1 = threading.Thread(target=task_rtt_read, args=('Logger', self.logger_buffer))
+        # t2 = threading.Thread(target=task_rtt_read, args=('Terminal', self.shell_buffer))
+        # t1.daemon = True
+        # t2.daemon = True
+        # t1.start()
+        # t2.start()
 
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')
