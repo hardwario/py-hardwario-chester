@@ -2,6 +2,7 @@ import threading
 import os
 import asyncio
 import logging
+import re
 from functools import partial
 from datetime import datetime
 from loguru import logger
@@ -20,11 +21,48 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.application.current import get_app
+from prompt_toolkit.lexers import Lexer
+from prompt_toolkit.styles.named_colors import NAMED_COLORS
+
 from .nrfjprog import NRFJProg, NRFJProgRTTNoChannels
 
 
 def getTime():
     return datetime.now().strftime('%Y.%m.%d %H:%M:%S.%f')[:23]
+
+
+log_level_color_lut = {
+    'X': NAMED_COLORS['Blue'],
+    'D': NAMED_COLORS['Magenta'],
+    'I': NAMED_COLORS['Green'],
+    'W': NAMED_COLORS['Yellow'],
+    'E': NAMED_COLORS['Red'],
+    'dbg': NAMED_COLORS['Magenta'],
+    'inf': NAMED_COLORS['Green'],
+    'wrn': NAMED_COLORS['Yellow'],
+    'err': NAMED_COLORS['Red'],
+}
+
+
+class LogLexer(Lexer):
+
+    def __init__(self, patern, colors=log_level_color_lut) -> None:
+        super().__init__()
+        self.patern = patern
+        self.colors = colors
+
+    def lex_document(self, document):
+        def get_line(lineno):
+            line = document.lines[lineno]
+
+            g = re.match(self.patern, line)
+            if g:
+                color = self.colors.get(g.group(2), '#ffffff')
+                return [(color, g.group(1)), ('#ffffff', g.group(3))]
+
+            return [('#ffffff', line)]
+
+        return get_line
 
 
 class Console:
@@ -62,6 +100,7 @@ class Console:
             focus_on_click=True,
             read_only=True,
             search_field=logger_search,
+            lexer=LogLexer(r'^(#.*?\d(?:\.\d+)? <(\w)\>)(.*)' if is_old else r'^(\[.*?\].*?<(\w+)\>)(.*)')
         )
         self.logger_buffer = logger_window.buffer
         logger.debug(f'history_file: {history_file}')
@@ -185,24 +224,24 @@ class Console:
             channels_up = (('Terminal', self.shell_buffer), ('Logger', self.logger_buffer))
 
             async def task_rtt_read():
-            while prog.rtt_is_running:
+                while prog.rtt_is_running:
                     for channel, buffer in channels_up:
-                with logger.catch(message='task_rtt_read', reraise=True):
-                    try:
-                        line = prog.rtt_read(channel)
-                    except NRFJProgRTTNoChannels:
-                        return
-                    if line:
-                        # buffer.insert_text(line.replace('\r', ''))
-                        for sline in line.splitlines():
-                            console_file.write(getTime() + (' # ' if channel == 'Logger' else ' > '))
-                            console_file.write(sline)
-                            console_file.write('\n')
-                        console_file.flush()
+                        with logger.catch(message='task_rtt_read', reraise=True):
+                            try:
+                                line = prog.rtt_read(channel)
+                            except NRFJProgRTTNoChannels:
+                                return
+                            if line:
+                                # buffer.insert_text(line.replace('\r', ''))
+                                for sline in line.splitlines():
+                                    console_file.write(getTime() + (' # ' if channel == 'Logger' else ' > '))
+                                    console_file.write(sline)
+                                    console_file.write('\n')
+                                console_file.flush()
 
-                        line = line.replace('\r', '')
-                        buffer.set_document(Document(buffer.text + line, None), True)
-                    await asyncio.sleep(rtt_read_delay)
+                                line = line.replace('\r', '')
+                                buffer.set_document(Document(buffer.text + line, None), True)
+                            await asyncio.sleep(rtt_read_delay)
 
         console_file.write(f'{ "*" * 80 }\n')
 
