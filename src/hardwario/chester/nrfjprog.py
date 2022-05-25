@@ -110,7 +110,7 @@ class NRFJProg(LowLevel.API):
 
     def rtt_start(self):
         if self._rtt_channels is not None:
-            return
+            return self._rtt_channels
 
         super().rtt_start()
         logger.debug('RTT Start')

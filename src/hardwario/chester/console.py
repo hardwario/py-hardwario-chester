@@ -29,7 +29,19 @@ def getTime():
 
 class Console:
 
-    def __init__(self, history_file):
+    def __init__(self, prog: NRFJProg, history_file, console_file, latency=50):
+        channels = prog.rtt_start()
+
+        is_old = False
+
+        if 'Terminal' not in channels:
+            raise Exception('Not found RTT Terminal channel')
+
+        if len(channels) > 1:
+            if 'Logger' not in channels:
+                raise Exception('Not found RTT Logger channel')
+        elif len(channels) == 1:
+            is_old = True
 
         shell_search = SearchToolbar(ignore_case=True, vi_mode=True)
         shell_window = TextArea(
@@ -49,10 +61,9 @@ class Console:
             focusable=True,
             focus_on_click=True,
             read_only=True,
-            search_field=logger_search
+            search_field=logger_search,
         )
         self.logger_buffer = logger_window.buffer
-
         logger.debug(f'history_file: {history_file}')
 
         os.makedirs(os.path.dirname(history_file), exist_ok=True)
@@ -120,7 +131,7 @@ class Console:
                 data = logger_window.buffer.copy_selection()
                 event.app.clipboard.set_data(data)
 
-        @ bindings.add("c-q", eager=True)
+        @bindings.add("c-q", eager=True)
         def _(event):
             event.app.exit()
 
@@ -136,19 +147,46 @@ class Console:
             clipboard=PyperclipClipboard()
         )
 
-    def run(self, prog: NRFJProg, console_file, latency=50):
-        channels = prog.rtt_start()
-
-        if 'Logger' not in channels:
-            raise Exception('Not found RTT Logger channel')
-
-        if 'Terminal' not in channels:
-            raise Exception('Not found RTT Terminal channel')
-
         rtt_read_delay = latency / 1000.0
 
-        async def task_rtt_read(channel, buffer):
+        if is_old:
+            async def task_rtt_read():
+                while prog.rtt_is_running:
+                    with logger.catch(message='task_rtt_read', reraise=True):
+                        try:
+                            lines = prog.rtt_read('Terminal')
+                        except NRFJProgRTTNoChannels:
+                            return
+                        if lines:
+                            shell = ''
+                            log = ''
+                            for line in lines.splitlines():
+                                if line.startswith('#'):
+                                    log += line + '\n'
+                                    console_file.write(getTime() + ' ')
+                                    console_file.write(line)
+                                else:
+                                    shell += line + '\n'
+                                    console_file.write(getTime() + ' > ')
+                                    console_file.write(line)
+                                console_file.write('\n')
+                            console_file.flush()
+
+                            if shell:
+                                shell = shell.replace('\r', '')
+                                self.shell_buffer.set_document(Document(self.shell_buffer.text + shell, None), True)
+                            if log:
+                                log = log.replace('\r', '')
+                                self.logger_buffer.set_document(Document(self.logger_buffer.text + log, None), True)
+
+                        await asyncio.sleep(rtt_read_delay)
+
+        else:
+            channels_up = (('Terminal', self.shell_buffer), ('Logger', self.logger_buffer))
+
+            async def task_rtt_read():
             while prog.rtt_is_running:
+                    for channel, buffer in channels_up:
                 with logger.catch(message='task_rtt_read', reraise=True):
                     try:
                         line = prog.rtt_read(channel)
@@ -168,22 +206,8 @@ class Console:
 
         console_file.write(f'{ "*" * 80 }\n')
 
-        async def task_rtt_read_logger():
-            await task_rtt_read('Logger', self.logger_buffer)
-
-        async def task_rtt_read_terminal():
-            await task_rtt_read('Terminal', self.shell_buffer)
-
         loop = get_event_loop()
-        loop.create_task(task_rtt_read_logger())
-        loop.create_task(task_rtt_read_terminal())
-
-        # t1 = threading.Thread(target=task_rtt_read, args=('Logger', self.logger_buffer))
-        # t2 = threading.Thread(target=task_rtt_read, args=('Terminal', self.shell_buffer))
-        # t1.daemon = True
-        # t2.daemon = True
-        # t1.start()
-        # t2.start()
+        loop.create_task(task_rtt_read())
 
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')

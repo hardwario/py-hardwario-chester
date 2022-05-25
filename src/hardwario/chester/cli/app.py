@@ -71,12 +71,11 @@ def command_console(ctx, reset, latency, history_file, console_file):
     '''Start interactive console for shell and logging.'''
     logger.remove(2)  # Remove stderr logger
 
-    console = Console(history_file=history_file)
     with ctx.obj['prog'] as prog:
         if reset:
             prog.reset()
             prog.go()
-        console.run(prog, console_file, latency=latency)
+        Console(prog, history_file, console_file, latency=latency)
 
 
 def validate_pib_param(ctx, param, value):
