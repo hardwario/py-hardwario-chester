@@ -1,6 +1,6 @@
 <a href="https://www.hardwario.com/"><img src="https://www.hardwario.com/ci/assets/hw-logo.svg" width="200" alt="HARDWARIO Logo" align="right"></a>
 
-# HARDWARIO CHESTER
+# HARDWARIO CHESTER CLI Tools
 
 [![Main](https://github.com/hardwario/py-hardwario-chester/actions/workflows/main.yaml/badge.svg)](https://github.com/hardwario/py-hardwario-chester/actions/workflows/main.yaml)
 [![Release](https://img.shields.io/github/release/hardwario/py-hardwario-chester.svg)](https://github.com/hardwario/py-hardwario-chester/releases)
