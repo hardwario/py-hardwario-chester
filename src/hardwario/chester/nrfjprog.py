@@ -75,6 +75,9 @@ class NRFJProg(LowLevel.API):
                     self.erase_page(addr)
 
     def program(self, file_path, halt=False, progress=lambda x: None):
+        self.reset()
+        self.halt()
+
         progress('Erasing...')
         self.erase_file(file_path, chip_erase_mode=EraseAction.ERASE_SECTOR)
 
@@ -101,9 +104,18 @@ class NRFJProg(LowLevel.API):
                 return des.start
         raise NRFJProgException('UICR descriptor not found.')
 
-    def write_uicr(self, buffer: bytes):
+    def write_uicr(self, buffer: bytes, halt=False):
+        self.reset()
+        self.halt()
+
         self.erase_uicr()
         self.write(self.get_uicr_address() + 0x80, buffer, True)
+
+        self.reset()
+        if halt:
+            self.halt()
+        else:
+            self.go()
 
     def read_uicr(self):
         return bytes(self.read(self.get_uicr_address() + 0x80, 128))
