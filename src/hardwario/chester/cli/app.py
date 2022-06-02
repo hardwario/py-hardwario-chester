@@ -126,8 +126,9 @@ def command_pib_read(ctx, out_json):
 @click.option('--serial-number', type=str, help='Serial number in decimal format.', prompt=True, callback=validate_pib_param)
 @click.option('--claim-token', type=str, help='Claim token for device self-registration (32 hexadecimal characters).', default='', prompt=True, show_default=True, callback=validate_pib_param)
 @click.option('--ble-passkey', type=str, help='Bluetooth security passkey (max 16 characters).', default='123456', prompt=True, show_default=True, callback=validate_pib_param)
+@click.option('--halt', is_flag=True, help='Halt program.')
 @click.pass_context
-def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, serial_number, claim_token, ble_passkey):
+def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, serial_number, claim_token, ble_passkey, halt):
     '''Write HARDWARIO Product Information Block to UICR.'''
     logger.debug('command_pib_write: %s', (serial_number,
                  vendor_name, product_name, hw_revision, hw_variant, claim_token, ble_passkey))
@@ -138,7 +139,7 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
     logger.debug('write uicr: %s', buffer.hex())
 
     with ctx.obj['prog'] as prog:
-        prog.write_uicr(buffer)
+        prog.write_uicr(buffer, halt=halt)
 
 
 @cli.group(name='uicr')
@@ -166,9 +167,10 @@ def command_uicr_read(ctx, format, file):
 
 @group_uicr.command('write')
 @click.option('--format', type=click.Choice(['hex', 'bin']), help='Specify input format.', required=True)
+@click.option('--halt', is_flag=True, help='Halt program.')
 @click.argument('file', type=click.File('rb'))
 @click.pass_context
-def command_uicr_write(ctx, format, file):
+def command_uicr_write(ctx, format, halt, file):
     '''Write generic UICR flash area from <FILE> or stdout.'''
 
     buffer = file.read()
@@ -185,7 +187,7 @@ def command_uicr_write(ctx, format, file):
     logger.debug('write uicr: %s', buffer.hex())
 
     with ctx.obj['prog'] as prog:
-        prog.write_uicr(buffer)
+        prog.write_uicr(buffer, halt=halt)
 
 
 def main():
