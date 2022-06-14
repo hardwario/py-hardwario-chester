@@ -41,7 +41,7 @@ chester = "hardwario.chester.cli:main"
 [tool.poetry.dependencies]
 python = ">=3.6.2"
 click = "^8.0.3"
-pynrfjprog = "=10.15.2"
+pynrfjprog = "=10.16.0"
 hardwario-common = "^1.6.1"
 docker = "^5.0.3"
 pylink-square = "^0.12.0"
