@@ -5,6 +5,7 @@ from loguru import logger
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg
 from ..console import Console
+from ..utils import find_hex
 
 
 @click.group(name='app')
@@ -17,10 +18,11 @@ def cli(ctx, nrfjprog_log):
 
 @cli.command('flash')
 @click.option('--halt', is_flag=True, help='Halt program.')
-@click.argument('hex_file', metavar='HEX_FILE', type=click.Path(exists=True))
+@click.argument('hex_file', metavar='HEX_FILE', type=click.Path(exists=True), default=find_hex('.', no_exception=True))
 @click.pass_context
 def command_flash(ctx, halt, hex_file):
     '''Flash application firmware (preserves UICR area).'''
+    click.echo(f'File: {hex_file}')
 
     def progress(text, ctx={'len': 0}):
         if ctx['len']:
