@@ -1,11 +1,14 @@
 import click
 import os
 import json
+import sys
+import string
 from loguru import logger
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg
 from ..console import Console
 from ..utils import find_hex
+from ..firmwareapi import FirmwareApi
 
 
 @click.group(name='app')
@@ -190,6 +193,16 @@ def command_uicr_write(ctx, format, halt, file):
 
     with ctx.obj['prog'] as prog:
         prog.write_uicr(buffer, halt=halt)
+
+
+@cli.command('deploy')
+@click.option('--label', type=str, help='Firmware label (max 100 characters).', prompt=True, required=True)
+@click.option('--token', metavar='TOKEN', required='--help' not in sys.argv, envvar='HARDWARIO_CLOUD_TOKEN')
+def command_deploy(label, token):
+    fwapi = FirmwareApi(token=token)
+    fw = fwapi.deploy(label, '.')
+    click.echo(f'UUID: {fw["id"]}')
+    click.echo(f'URL: https://firmware.hardwario.com/chester/{fw["id"]}')
 
 
 def main():
