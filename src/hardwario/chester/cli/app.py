@@ -9,6 +9,7 @@ from ..nrfjprog import NRFJProg, HighNRFJProg
 from ..console import Console
 from ..utils import find_hex
 from ..firmwareapi import FirmwareApi
+from ..utils import find_hex, download_url
 
 
 @click.group(name='app')
@@ -19,9 +20,20 @@ def cli(ctx, nrfjprog_log):
     ctx.obj['prog'] = NRFJProg('app', log=nrfjprog_log)
 
 
+def validate_hex_file(ctx, param, value):
+    # print('validate_hex_file', ctx.obj, param.name, value)
+    if len(value) == 32 and all(c in string.hexdigits for c in value):
+        return download_url(f'https://firmware.hardwario.com/chester/{value}/hex', filename=f'{value}.hex')
+
+    if os.path.exists(value):
+        return value
+
+    raise click.BadParameter(f'Path \'{value}\' does not exist.')
+
+
 @cli.command('flash')
 @click.option('--halt', is_flag=True, help='Halt program.')
-@click.argument('hex_file', metavar='HEX_FILE', type=click.Path(exists=True), default=find_hex('.', no_exception=True))
+@click.argument('hex_file', metavar='HEX_FILE_OR_ID', callback=validate_hex_file, default=find_hex('.', no_exception=True))
 @click.pass_context
 def command_flash(ctx, halt, hex_file):
     '''Flash application firmware (preserves UICR area).'''
