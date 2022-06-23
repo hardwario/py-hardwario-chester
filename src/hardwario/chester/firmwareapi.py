@@ -38,7 +38,7 @@ class FirmwareApi:
 
         return self._response.json()
 
-    def deploy(self, label, app_path='.'):
+    def upload(self, label, app_path='.'):
         logger.debug(f'label={label}')
 
         revision = None

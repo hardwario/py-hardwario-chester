@@ -7,8 +7,7 @@ from loguru import logger
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg
 from ..console import Console
-from ..utils import find_hex
-from ..firmwareapi import FirmwareApi
+from ..firmwareapi import FirmwareApi, DEFAULT_API_URL
 from ..utils import find_hex, download_url
 
 
@@ -207,12 +206,21 @@ def command_uicr_write(ctx, format, halt, file):
         prog.write_uicr(buffer, halt=halt)
 
 
-@cli.command('deploy')
-@click.option('--label', type=str, help='Firmware label (max 100 characters).', prompt=True, required=True)
+@cli.group(name='fw')
+@click.option('--url', metavar='URL', required=True, default=DEFAULT_API_URL, envvar='HARDWARIO_CLOUD_URL', show_default=True)
 @click.option('--token', metavar='TOKEN', required='--help' not in sys.argv, envvar='HARDWARIO_CLOUD_TOKEN')
-def command_deploy(label, token):
-    fwapi = FirmwareApi(token=token)
-    fw = fwapi.deploy(label, '.')
+@click.pass_context
+def cli_fw(ctx, url, token):
+    '''Firmware commands.'''
+    ctx.obj['fwapi'] = FirmwareApi(url=url, token=token)
+
+
+@cli_fw.command('upload')
+@click.option('--label', type=str, help='Firmware label (max 100 characters).', prompt=True, required=True)
+@click.pass_context
+def command_fw_upload(ctx, label):
+    '''Upload application firmware.'''
+    fw = ctx.obj['fwapi'].upload(label, '.')
     click.echo(f'UUID: {fw["id"]}')
     click.echo(f'URL: https://firmware.hardwario.com/chester/{fw["id"]}')
 
