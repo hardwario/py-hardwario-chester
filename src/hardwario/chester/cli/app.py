@@ -251,7 +251,7 @@ def command_fw_delete(ctx, id):
 @click.option('--id', metavar="ID", show_default=True, required=True)
 @click.pass_context
 def command_fw_show(ctx, id):
-    '''Show codec detail.'''
+    '''Show firmware detail.'''
     fw = ctx.obj['fwapi'].detail(id)
     click.echo(f'UUID: {fw["id"]}')
     click.echo(f'URL: https://firmware.hardwario.com/chester/{fw["id"]}')
