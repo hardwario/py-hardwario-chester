@@ -76,3 +76,32 @@ class FirmwareApi:
         resp = self.request('POST', '/v1/firmware', data=data, files=files)
         logger.debug(f'Response {resp}')
         return resp
+
+    def list(self, offset: int = 0, limit: int = None):
+        return self._list('/v1/firmware', {}, offset, limit)
+
+    def detail(self, id):
+        return self.request('GET', f'/v1/firmware/{id}')
+
+    def delete(self, id):
+        return self.request('DELETE', f'/v1/firmware/{id}')
+
+    def _list(self, url, params: dict, offset=0, limit=None):
+        cnt = 0
+        params['offset'] = offset
+
+        while True:
+            params['limit'] = 100 if limit is None else limit
+
+            for row in self.request('GET', url, params=params):
+                cnt += 1
+                yield row
+
+            if limit is not None and limit >= cnt:
+                break
+
+            x_total = int(self._response.headers['x-total'])
+            params['offset'] = offset + cnt
+
+            if params['offset'] >= x_total:
+                break
