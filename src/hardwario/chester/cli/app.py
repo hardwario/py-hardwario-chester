@@ -3,6 +3,7 @@ import os
 import json
 import sys
 import string
+from datetime import datetime
 from loguru import logger
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg
@@ -207,7 +208,7 @@ def command_uicr_write(ctx, format, halt, file):
 
 
 @cli.group(name='fw')
-@click.option('--url', metavar='URL', required=True, default=DEFAULT_API_URL, envvar='HARDWARIO_CLOUD_URL', show_default=True)
+@click.option('--url', metavar='URL', required=True, default=os.environ.get('HARDWARIO_FW_API_URL', DEFAULT_API_URL), show_default=True)
 @click.option('--token', metavar='TOKEN', required='--help' not in sys.argv, envvar='HARDWARIO_CLOUD_TOKEN')
 @click.pass_context
 def cli_fw(ctx, url, token):
@@ -223,6 +224,43 @@ def command_fw_upload(ctx, label):
     fw = ctx.obj['fwapi'].upload(label, '.')
     click.echo(f'UUID: {fw["id"]}')
     click.echo(f'URL: https://firmware.hardwario.com/chester/{fw["id"]}')
+
+
+@cli_fw.command('list')
+@click.option('--limit', type=click.IntRange(0, 100, clamp=True))
+@click.pass_context
+def command_fw_upload(ctx, limit):
+    '''List application firmwares.'''
+    click.echo(f'{"UUID":32} {"Time":19} Label')
+    for fw in ctx.obj['fwapi'].list(limit=limit):
+        dt = datetime.fromtimestamp(fw['timestamp'])
+        click.echo(f'{fw["id"]} {dt} {fw["label"]}')
+
+
+@cli_fw.command('delete')
+@click.option('--id', metavar="ID", required=True)
+@click.confirmation_option(prompt='Are you sure you want to delete firmware ?')
+@click.pass_context
+def command_fw_delete(ctx, id):
+    '''Delete firmware.'''
+    fw = ctx.obj['fwapi'].delete(id)
+    click.echo('OK')
+
+
+@cli_fw.command('show')
+@click.option('--id', metavar="ID", show_default=True, required=True)
+@click.pass_context
+def command_fw_show(ctx, id):
+    '''Show codec detail.'''
+    fw = ctx.obj['fwapi'].detail(id)
+    click.echo(f'UUID: {fw["id"]}')
+    click.echo(f'URL: https://firmware.hardwario.com/chester/{fw["id"]}')
+    click.echo(f'Label: {fw["label"]}')
+    click.echo(f'Time: {datetime.fromtimestamp(fw["timestamp"])}')
+    click.echo(f'Revision: {fw["revision"]}')
+    click.echo(f'SHA256 firmware: {fw["firmware_sha256"]}')
+    click.echo(f'SHA256 app_update: {fw["app_update_sha256"]}')
+    click.echo(f'Build Manifest: {json.dumps(fw["manifest"])}')
 
 
 def main():
