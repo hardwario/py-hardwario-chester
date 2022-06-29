@@ -222,8 +222,8 @@ def cli_fw(ctx, url, token):
 def command_fw_upload(ctx, label):
     '''Upload application firmware.'''
     fw = ctx.obj['fwapi'].upload(label, '.')
-    click.echo(f'UUID: {fw["id"]}')
-    click.echo(f'URL: https://firmware.hardwario.com/chester/{fw["id"]}')
+    click.echo(f'Unique identifier: {fw["id"]}')
+    click.echo(f'Sharable link    : https://firmware.hardwario.com/chester/{fw["id"]}')
 
 
 @cli_fw.command('list')
@@ -253,14 +253,15 @@ def command_fw_delete(ctx, id):
 def command_fw_show(ctx, id):
     '''Show firmware detail.'''
     fw = ctx.obj['fwapi'].detail(id)
-    click.echo(f'UUID: {fw["id"]}')
-    click.echo(f'URL: https://firmware.hardwario.com/chester/{fw["id"]}')
-    click.echo(f'Label: {fw["label"]}')
-    click.echo(f'Time: {datetime.fromtimestamp(fw["timestamp"])}')
-    click.echo(f'Revision: {fw["revision"]}')
-    click.echo(f'SHA256 firmware: {fw["firmware_sha256"]}')
+    click.echo(f'Unique identifier: {fw["id"]}')
+    click.echo(f'Label:             {fw["label"]}')
+    click.echo(f'Sharable link:     https://firmware.hardwario.com/chester/{fw["id"]}')
+    click.echo(f'Upload date/time:  {datetime.fromtimestamp(fw["timestamp"])}')
+    click.echo(f'Commit revision:   {fw["revision"]}')
+    click.echo(f'SHA256 firmware:   {fw["firmware_sha256"]}')
     click.echo(f'SHA256 app_update: {fw["app_update_sha256"]}')
-    click.echo(f'Build Manifest: {json.dumps(fw["manifest"])}')
+    click.echo(f'SHA256 zephyr_elf: {fw["zephyr_elf_sha256"]}')
+    click.echo(f'Build Manifest:    {json.dumps(fw["manifest"])}')
 
 
 def main():
