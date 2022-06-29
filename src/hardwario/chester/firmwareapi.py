@@ -69,9 +69,14 @@ class FirmwareApi:
 
         manifest_json_path = test_file(app_path, 'build', 'zephyr', 'dfu_application.zip_manifest.json')
         logger.debug(f'manifest_json_path={manifest_json_path}')
-
         if manifest_json_path:
             files['manifest'] = open(manifest_json_path, 'rb')
+
+        zephyr_elf_path = test_file(app_path, 'build', 'zephyr', 'zephyr.elf')
+        logger.debug(f'zephyr_elf_path={zephyr_elf_path}')
+        if zephyr_elf_path:
+            data['zephyr_elf_sha256'] = get_file_hash(zephyr_elf_path)
+            files['zephyr_elf'] = open(zephyr_elf_path, 'rb')
 
         resp = self.request('POST', '/v1/firmware', data=data, files=files)
         logger.debug(f'Response {resp}')
