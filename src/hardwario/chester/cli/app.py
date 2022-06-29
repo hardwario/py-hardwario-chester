@@ -247,11 +247,11 @@ def command_fw_delete(ctx, id):
     click.echo('OK')
 
 
-@cli_fw.command('show')
+@cli_fw.command('info')
 @click.option('--id', metavar="ID", show_default=True, required=True)
 @click.pass_context
-def command_fw_show(ctx, id):
-    '''Show firmware detail.'''
+def command_fw_info(ctx, id):
+    '''Info firmware detail.'''
     fw = ctx.obj['fwapi'].detail(id)
     click.echo(f'Unique identifier: {fw["id"]}')
     click.echo(f'Label:             {fw["label"]}')
