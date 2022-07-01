@@ -20,6 +20,10 @@ class FirmwareApi:
         if token:
             self.set_token(token)
 
+    @property
+    def url(self):
+        return self._url
+
     def set_token(self, token):
         self._headers['Authorization'] = 'Bearer ' + token
 
@@ -38,19 +42,18 @@ class FirmwareApi:
 
         return self._response.json()
 
-    def upload(self, label, app_path='.'):
-        logger.debug(f'label={label}')
-
-        revision = None
+    def upload(self, name, version, app_path='.'):
+        git_revision = None
         try:
-            revision = subprocess.check_output(
+            git_revision = subprocess.check_output(
                 ['git', '-C', app_path, 'rev-parse', 'HEAD']).decode('ascii').strip()
         except Exception:
             pass
 
         data = {
-            'label': label,
-            'revision': revision
+            'name': name,
+            'version': version,
+            'git_revision': git_revision
         }
 
         files = {}

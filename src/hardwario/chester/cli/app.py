@@ -3,6 +3,7 @@ import os
 import json
 import sys
 import string
+import re
 from datetime import datetime
 from loguru import logger
 from ..pib import PIB, PIBException
@@ -216,14 +217,22 @@ def cli_fw(ctx, url, token):
     ctx.obj['fwapi'] = FirmwareApi(url=url, token=token)
 
 
+def validate_version(ctx, param, value):
+    if re.match(r'^v\d{1,3}\.\d{1,3}\.\d{1,3}(-.*?)?$', value):
+        return value
+    raise click.BadParameter('Bad version format expect is example: v1.0.0-alpha .')
+
+
 @cli_fw.command('upload')
-@click.option('--label', type=str, help='Firmware label (max 100 characters).', prompt=True, required=True)
+@click.option('--name', type=str, help='Firmware name (max 100 characters).', prompt=True, required=True)
+@click.option('--version', type=str, help='Firmware version (max 50 characters).', callback=validate_version, prompt=True, required=True)
 @click.pass_context
-def command_fw_upload(ctx, label):
+def command_fw_upload(ctx, name, version):
     '''Upload application firmware.'''
-    fw = ctx.obj['fwapi'].upload(label, '.')
+    fw = ctx.obj['fwapi'].upload(name, version, '.')
+    url = ctx.obj['fwapi'].url
     click.echo(f'Unique identifier: {fw["id"]}')
-    click.echo(f'Sharable link    : https://firmware.hardwario.com/chester/{fw["id"]}')
+    click.echo(f'Sharable link    : {url[:-4]}/{fw["id"]}')
 
 
 @cli_fw.command('list')
@@ -231,10 +240,10 @@ def command_fw_upload(ctx, label):
 @click.pass_context
 def command_fw_upload(ctx, limit):
     '''List application firmwares.'''
-    click.echo(f'{"UUID":32} {"Time":19} Label')
+    click.echo(f'{"UUID":32} {"Upload UTC date/time":20} Label')
     for fw in ctx.obj['fwapi'].list(limit=limit):
-        dt = datetime.fromtimestamp(fw['timestamp'])
-        click.echo(f'{fw["id"]} {dt} {fw["label"]}')
+        dt = fw['created_at'][:10] + ' ' + fw['created_at'][11:-5]
+        click.echo(f'{fw["id"]} {dt}  {fw["name"]}:{fw["version"]}')
 
 
 @cli_fw.command('delete')
@@ -249,19 +258,23 @@ def command_fw_delete(ctx, id):
 
 @cli_fw.command('info')
 @click.option('--id', metavar="ID", show_default=True, required=True)
+@click.option('--show-all', is_flag=True, help='Show all properties.')
 @click.pass_context
-def command_fw_info(ctx, id):
+def command_fw_info(ctx, id, show_all):
     '''Info firmware detail.'''
     fw = ctx.obj['fwapi'].detail(id)
+    url = ctx.obj['fwapi'].url
     click.echo(f'Unique identifier: {fw["id"]}')
-    click.echo(f'Label:             {fw["label"]}')
-    click.echo(f'Sharable link:     https://firmware.hardwario.com/chester/{fw["id"]}')
-    click.echo(f'Upload date/time:  {datetime.fromtimestamp(fw["timestamp"])}')
-    click.echo(f'Commit revision:   {fw["revision"]}')
+    click.echo(f'Name:              {fw["name"]}')
+    click.echo(f'Version:           {fw["version"]}')
+    click.echo(f'Sharable link:     {url}/{fw["id"]}')
+    click.echo(f'Upload date/time:  {fw["created_at"]}')
+    click.echo(f'Commit revision:   {fw["git_revision"]}')
     click.echo(f'SHA256 firmware:   {fw["firmware_sha256"]}')
     click.echo(f'SHA256 app_update: {fw["app_update_sha256"]}')
     click.echo(f'SHA256 zephyr_elf: {fw["zephyr_elf_sha256"]}')
-    click.echo(f'Build Manifest:    {json.dumps(fw["manifest"])}')
+    if show_all:
+        click.echo(f'Build Manifest:    {json.dumps(fw["manifest"])}')
 
 
 def main():
