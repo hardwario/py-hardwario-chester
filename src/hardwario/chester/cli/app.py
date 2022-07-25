@@ -93,7 +93,12 @@ def command_console(ctx, reset, latency, history_file, console_file):
         if reset:
             prog.reset()
             prog.go()
-        Console(prog, history_file, console_file, latency=latency)
+        c = Console(prog, history_file, console_file, latency=latency)
+
+        click.echo('TIP: After J-Link connection, it is crucial to power cycle the target device; otherwise, the CPU debug mode results in a permanently increased power consumption.')
+
+        if c.exception:
+            raise c.exception
 
 
 def validate_pib_param(ctx, param, value):

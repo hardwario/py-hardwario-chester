@@ -2,6 +2,7 @@ import threading
 import os
 import asyncio
 import logging
+import sys
 import re
 from functools import partial
 from datetime import datetime
@@ -23,8 +24,7 @@ from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles.named_colors import NAMED_COLORS
-
-from .nrfjprog import NRFJProg, NRFJProgRTTNoChannels
+from .nrfjprog import NRFJProg, NRFJProgRTTNoChannels, NRFJProgException
 
 
 def getTime():
@@ -231,6 +231,9 @@ class Console:
                                 line = prog.rtt_read(channel)
                             except NRFJProgRTTNoChannels:
                                 return
+                            except NRFJProgException as e:
+                                self.exit(e)
+                                return
                             if line:
                                 # buffer.insert_text(line.replace('\r', ''))
                                 for sline in line.splitlines():
@@ -263,3 +266,7 @@ class Console:
         self.app.run()
 
         prog.rtt_stop()
+
+    def exit(self, exception=None):
+        self.exception = exception
+        self.app.exit()
