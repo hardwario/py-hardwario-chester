@@ -68,6 +68,7 @@ class LogLexer(Lexer):
 class Console:
 
     def __init__(self, prog: NRFJProg, history_file, console_file, latency=50):
+        self.exception = None
         channels = prog.rtt_start()
 
         is_old = False
