@@ -1,3 +1,4 @@
+import time
 from loguru import logger
 from pynrfjprog import HighLevel, APIError, LowLevel
 from pynrfjprog.Parameters import *
@@ -190,10 +191,20 @@ class NRFJProg(LowLevel.API):
             if length is None:
                 length = ch['size']
             channel = ch['index']
-        msg = super().rtt_read(channel, length, encoding)
-        if msg:
-            logger.debug('channel: {} msg: {}', channel, repr(msg))
-        return msg
+
+        try:
+            msg = super().rtt_read(channel, length, encoding)
+            if msg:
+                logger.debug('channel: {} msg: {}', channel, repr(msg))
+            return msg
+        except APIError.APIError as e:
+            logger.exception(e)
+            if self.read_connected_emu_fwstr():
+                raise NRFJProgException(
+                    'J-Link communication error occurred (check the flat cable between J-Link and the device)')
+            else:
+                raise NRFJProgException(
+                    'J-Link communication error occurred (check the USB cable between the computer and J-Link)')
 
     def __enter__(self):
         self.open()
