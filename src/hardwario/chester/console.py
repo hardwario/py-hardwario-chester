@@ -185,7 +185,7 @@ class Console:
 
         @bindings.add("c-insert", eager=True)  # TODO: check
         @bindings.add("c-c", eager=True)
-        def do_copy(event):
+        def _(event):
             if event.app.layout.has_focus(shell_window):
                 data = shell_window.buffer.copy_selection()
                 event.app.clipboard.set_data(data)
@@ -193,6 +193,14 @@ class Console:
             elif event.app.layout.has_focus(logger_window):
                 data = logger_window.buffer.copy_selection()
                 event.app.clipboard.set_data(data)
+
+        @bindings.add("f5", eager=True)
+        def _(event):
+            input_focus = event.app.layout.has_focus(self.input_field)
+            if input_focus or event.app.layout.has_focus(shell_window):
+                self.shell_buffer.cursor_position = len(self.shell_buffer.text)
+            if input_focus or event.app.layout.has_focus(logger_window):
+                self.logger_buffer.cursor_position = len(self.logger_buffer.text)
 
         @bindings.add("c-q", eager=True)
         @bindings.add("f4", eager=True)
@@ -247,9 +255,13 @@ class Console:
                         await asyncio.sleep(rtt_read_delay)
 
         else:
-            channels_up = (('Terminal', self.shell_buffer), ('Logger', self.logger_buffer))
+            channels_up = (
+                ('Terminal', self.shell_buffer),
+                ('Logger', self.logger_buffer)
+            )
 
             async def task_rtt_read():
+                cnt = 0
                 while prog.rtt_is_running:
                     for channel, buffer in channels_up:
                         with logger.catch(message='task_rtt_read', reraise=True):
@@ -269,7 +281,13 @@ class Console:
                                 console_file.flush()
 
                                 line = line.replace('\r', '')
-                                buffer.set_document(Document(buffer.text + line, None), True)
+                                scroll_to_end = buffer.cursor_position == len(buffer.text)
+                                changed = buffer._set_text(buffer.text + line)
+                                if changed:
+                                    if scroll_to_end:
+                                        buffer.cursor_position = len(buffer.text)
+                                    buffer._text_changed()
+
                             await asyncio.sleep(rtt_read_delay)
 
         console_file.write(f'{ "*" * 80 }\n')
