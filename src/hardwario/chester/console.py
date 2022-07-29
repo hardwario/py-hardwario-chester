@@ -135,12 +135,9 @@ class Console:
             ]
 
         def get_statusbar_scroll_text():
-            if self.scroll_to_end:
-                return [
-                    ("class:title", '[F5] Pause scroll'),
-                ]
             return [
-                ("class:red", '[F5] Resume scroll'),
+                ("class:title", '[F5] Pause scroll') if self.scroll_to_end else ("class:red", '[F5] Resume scroll'),
+                ("class:title", ' [F8] Clean')
             ]
 
         def get_statusbar_time():
@@ -211,8 +208,13 @@ class Console:
                 self.shell_buffer.cursor_position = len(self.shell_buffer.text)
                 self.logger_buffer.cursor_position = len(self.logger_buffer.text)
 
-        @bindings.add("c-q", eager=True)
-        @bindings.add("f4", eager=True)
+        @bindings.add("f8", eager=True)
+        def _(event):
+            self.shell_buffer.set_document(Document(''), True)
+            self.logger_buffer.set_document(Document(''), True)
+
+        @ bindings.add("c-q", eager=True)
+        @ bindings.add("f4", eager=True)
         def _(event):
             event.app.exit()
 
