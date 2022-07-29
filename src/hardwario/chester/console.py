@@ -73,6 +73,7 @@ class Console:
     def __init__(self, prog: NRFJProg, history_file, console_file, latency=50):
         self.exception = None
         self.show_status_bar = True
+        self.scroll_to_end = True
 
         channels = prog.rtt_start()
 
@@ -127,14 +128,20 @@ class Console:
             focusable=True,
             focus_on_click=True)
 
-        def get_titlebar_text():
+        def get_statusbar_text():
             return [
                 ("class:title", " HARDWARIO CHESTER Console "),
                 ("class:title", " (Press [Ctrl-Q] or [F4] to quit.)"),
             ]
 
-        def get_statusbar_text():
-            return " Press Ctrl-C to open menu. "
+        def get_statusbar_scroll_text():
+            if self.scroll_to_end:
+                return [
+                    ("class:title", '[F5] Pause scroll'),
+                ]
+            return [
+                ("class:red", '[F5] Resume scroll'),
+            ]
 
         def get_statusbar_time():
             return get_time()[:19]
@@ -142,7 +149,10 @@ class Console:
         status_bar = ConditionalContainer(
             content=VSplit([
                 Window(
-                    FormattedTextControl(get_titlebar_text), style="class:status"
+                    FormattedTextControl(get_statusbar_text), style="class:status"
+                ),
+                Window(
+                    FormattedTextControl(get_statusbar_scroll_text), style="class:status"
                 ),
                 Window(
                     FormattedTextControl(get_statusbar_time),
@@ -196,10 +206,9 @@ class Console:
 
         @bindings.add("f5", eager=True)
         def _(event):
-            input_focus = event.app.layout.has_focus(self.input_field)
-            if input_focus or event.app.layout.has_focus(shell_window):
+            self.scroll_to_end = not self.scroll_to_end
+            if self.scroll_to_end:
                 self.shell_buffer.cursor_position = len(self.shell_buffer.text)
-            if input_focus or event.app.layout.has_focus(logger_window):
                 self.logger_buffer.cursor_position = len(self.logger_buffer.text)
 
         @bindings.add("c-q", eager=True)
@@ -281,10 +290,9 @@ class Console:
                                 console_file.flush()
 
                                 line = line.replace('\r', '')
-                                scroll_to_end = buffer.cursor_position == len(buffer.text)
                                 changed = buffer._set_text(buffer.text + line)
                                 if changed:
-                                    if scroll_to_end:
+                                    if self.scroll_to_end:
                                         buffer.cursor_position = len(buffer.text)
                                     buffer._text_changed()
 
