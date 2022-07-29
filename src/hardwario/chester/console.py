@@ -113,7 +113,7 @@ class Console:
 
         self.input_field = TextArea(
             height=1,
-            prompt=">>> ",
+            prompt="Command: ",
             style="class:input-field",
             multiline=False,
             wrap_lines=False,
