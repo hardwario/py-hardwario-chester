@@ -10,12 +10,13 @@ from loguru import logger
 from prompt_toolkit.eventloop.utils import get_event_loop
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window, WindowAlign
+from prompt_toolkit.layout.containers import HSplit, VSplit, Window, WindowAlign, ConditionalContainer
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.layout.margins import NumberedMargin, ScrollbarMargin
-from prompt_toolkit.widgets import SearchToolbar, TextArea, Frame, HorizontalLine
+from prompt_toolkit.widgets import SearchToolbar, TextArea, Frame, HorizontalLine, Box, Label
 from prompt_toolkit.styles import Style
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.document import Document
@@ -24,10 +25,12 @@ from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles.named_colors import NAMED_COLORS
+from prompt_toolkit.filters import Condition
+from prompt_toolkit.layout.dimension import LayoutDimension
 from .nrfjprog import NRFJProg, NRFJProgRTTNoChannels, NRFJProgException
 
 
-def getTime():
+def get_time():
     return datetime.now().strftime('%Y.%m.%d %H:%M:%S.%f')[:23]
 
 
@@ -69,6 +72,8 @@ class Console:
 
     def __init__(self, prog: NRFJProg, history_file, console_file, latency=50):
         self.exception = None
+        self.show_status_bar = True
+
         channels = prog.rtt_start()
 
         is_old = False
@@ -125,17 +130,34 @@ class Console:
         def get_titlebar_text():
             return [
                 ("class:title", " HARDWARIO CHESTER Console "),
-                ("class:title", " (Press [Ctrl-Q] to quit.)"),
+                ("class:title", " (Press [Ctrl-Q] or [F4] to quit.)"),
             ]
+
+        def get_statusbar_text():
+            return " Press Ctrl-C to open menu. "
+
+        def get_statusbar_time():
+            return get_time()[:19]
+
+        status_bar = ConditionalContainer(
+            content=VSplit([
+                Window(
+                    FormattedTextControl(get_titlebar_text), style="class:status"
+                ),
+                Window(
+                    FormattedTextControl(get_statusbar_time),
+                    style="class:status.right",
+                    width=24,
+                    align=WindowAlign.RIGHT,
+                ),
+                Window(width=1, align=WindowAlign.RIGHT)
+            ],
+                height=LayoutDimension.exact(1),
+                style="class:status",),
+            filter=Condition(lambda: self.show_status_bar))
 
         root_container = HSplit(
             [
-                # The titlebar.
-                Window(
-                    height=1,
-                    content=FormattedTextControl(get_titlebar_text),
-                    align=WindowAlign.CENTER,
-                ),
                 VSplit(
                     [
                         Frame(HSplit(
@@ -154,7 +176,8 @@ class Console:
                             ]
                         ), title="Device Log"),
                     ]
-                )
+                ),
+                status_bar
             ]
         )
 
@@ -172,6 +195,7 @@ class Console:
                 event.app.clipboard.set_data(data)
 
         @bindings.add("c-q", eager=True)
+        @bindings.add("f4", eager=True)
         def _(event):
             event.app.exit()
 
@@ -183,6 +207,7 @@ class Console:
             key_bindings=bindings,
             mouse_support=True,
             full_screen=True,
+            refresh_interval=1,
             enable_page_navigation_bindings=True,
             clipboard=PyperclipClipboard()
         )
@@ -203,11 +228,11 @@ class Console:
                             for line in lines.splitlines():
                                 if line.startswith('#'):
                                     log += line + '\n'
-                                    console_file.write(getTime() + ' ')
+                                    console_file.write(get_time() + ' ')
                                     console_file.write(line)
                                 else:
                                     shell += line + '\n'
-                                    console_file.write(getTime() + ' > ')
+                                    console_file.write(get_time() + ' > ')
                                     console_file.write(line)
                                 console_file.write('\n')
                             console_file.flush()
@@ -238,7 +263,7 @@ class Console:
                             if line:
                                 # buffer.insert_text(line.replace('\r', ''))
                                 for sline in line.splitlines():
-                                    console_file.write(getTime() + (' # ' if channel == 'Logger' else ' > '))
+                                    console_file.write(get_time() + (' # ' if channel == 'Logger' else ' > '))
                                     console_file.write(sline)
                                     console_file.write('\n')
                                 console_file.flush()
@@ -255,7 +280,7 @@ class Console:
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')
             # self.shell_buffer.insert_text(line)
-            console_file.write(f'{getTime()} < {line}')
+            console_file.write(f'{get_time()} < {line}')
             text = self.shell_buffer.text + line
             self.shell_buffer.set_document(Document(text, None), True)
 
