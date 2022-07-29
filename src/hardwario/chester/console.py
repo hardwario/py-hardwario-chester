@@ -146,13 +146,13 @@ class Console:
                                 self.input_field,
                                 search_field
                             ]
-                        ), title="Shell"),
+                        ), title="Interactive Shell"),
                         Frame(HSplit(
                             [
                                 logger_window,
                                 logger_search
                             ]
-                        ), title="Log"),
+                        ), title="Device Log"),
                     ]
                 )
             ]
