@@ -7,17 +7,18 @@ import re
 from functools import partial
 from datetime import datetime
 from loguru import logger
+from prompt_toolkit import print_formatted_text
 from prompt_toolkit.eventloop.utils import get_event_loop
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.formatted_text import FormattedText, HTML, ANSI
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window, WindowAlign, ConditionalContainer
+from prompt_toolkit.layout.containers import HSplit, VSplit, Window, WindowAlign, ConditionalContainer, FloatContainer, Float
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.layout.margins import NumberedMargin, ScrollbarMargin
-from prompt_toolkit.widgets import SearchToolbar, TextArea, Frame, HorizontalLine, Box, Label
-from prompt_toolkit.styles import Style
+from prompt_toolkit.widgets import SearchToolbar, TextArea, Frame, HorizontalLine, Box, Label, FormattedTextToolbar
+from prompt_toolkit.styles import Style, Priority
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
@@ -26,12 +27,13 @@ from prompt_toolkit.application.current import get_app
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles.named_colors import NAMED_COLORS
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.validation import Validator, ValidationError
 from prompt_toolkit.layout.dimension import LayoutDimension
 from .nrfjprog import NRFJProg, NRFJProgRTTNoChannels, NRFJProgException
 
 
 def get_time():
-    return datetime.now().strftime('%Y.%m.%d %H:%M:%S.%f')[:23]
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:23]
 
 
 log_level_color_lut = {
@@ -60,12 +62,18 @@ class LogLexer(Lexer):
 
             g = re.match(self.patern, line)
             if g:
-                color = self.colors.get(g.group(2), '#ffffff')
-                return [(color, g.group(1)), ('#ffffff', g.group(3))]
+                color = self.colors.get(g.group(2), '#eeeeee')
+                return [(color, g.group(1)), ('#eeeeee', g.group(3))]
 
-            return [('#ffffff', line)]
+            return [('#eeeeee', line)]
 
         return get_line
+
+
+class InputValidator(Validator):
+    def validate(self, document: Document) -> None:
+        if not re.match(r'^[a-zA-Z0-9", \n]*$', document.text):
+            raise ValidationError(message='Invalid input', cursor_position=len(document.text))
 
 
 class Console:
@@ -74,6 +82,7 @@ class Console:
         self.exception = None
         self.show_status_bar = True
         self.scroll_to_end = True
+        self.zoom = None
 
         channels = prog.rtt_start()
 
@@ -95,7 +104,7 @@ class Console:
             focusable=True,
             focus_on_click=True,
             read_only=True,
-            search_field=shell_search
+            search_field=shell_search,
         )
         self.shell_buffer = shell_window.buffer
 
@@ -119,38 +128,42 @@ class Console:
 
         self.input_field = TextArea(
             height=1,
-            prompt="Command: ",
+            prompt=lambda: [('class:cyan', 'Command: ')] if self.has_focus(self.input_field) else 'Command: ',
             style="class:input-field",
             multiline=False,
             wrap_lines=False,
             search_field=search_field,
             history=input_history,
             focusable=True,
-            focus_on_click=True)
+            focus_on_click=True,
+            # validator=InputValidator(),
+        )
 
         def get_statusbar_text():
             return [
-                ("class:title", " HARDWARIO CHESTER Console "),
-                ("class:title", " (Press [Ctrl-Q] or [F4] to quit.)"),
+                ('class:title', ' HARDWARIO CHESTER Console     '),
+                ('class:title', ' <F3> Focus '),
+                ('class:title', ' <F5> Pause ') if self.scroll_to_end else ('class:yellow', ' <F5> Pause '),
+                ('class:title', ' <F8> Clear '),
+                ('class:title', ' <F10> Exit (or Ctrl-<F10>) '),
+                ('class:title', ' [Shift-]<Tab> Cycle '),
             ]
 
         def get_statusbar_scroll_text():
             return [
-                ("class:title", '[F5] Pause scroll') if self.scroll_to_end else ("class:red", '[F5] Resume scroll'),
-                ("class:title", ' [F8] Clean')
             ]
 
         def get_statusbar_time():
-            return get_time()[:19]
+            return datetime.now().strftime('%b %d, %Y  %H:%M:%S')
 
         status_bar = ConditionalContainer(
             content=VSplit([
                 Window(
                     FormattedTextControl(get_statusbar_text), style="class:status"
                 ),
-                Window(
-                    FormattedTextControl(get_statusbar_scroll_text), style="class:status"
-                ),
+                # Window(
+                #     FormattedTextControl(get_statusbar_scroll_text), style="class:status"
+                # ),
                 Window(
                     FormattedTextControl(get_statusbar_time),
                     style="class:status.right",
@@ -160,32 +173,59 @@ class Console:
                 Window(width=1, align=WindowAlign.RIGHT)
             ],
                 height=LayoutDimension.exact(1),
-                style="class:status",),
+                style="class:statusbar",),
             filter=Condition(lambda: self.show_status_bar))
 
-        root_container = HSplit(
-            [
-                VSplit(
-                    [
-                        Frame(HSplit(
-                            [
-                                shell_window,
-                                shell_search,
-                                HorizontalLine(),
-                                self.input_field,
-                                search_field
-                            ]
-                        ), title="Interactive Shell"),
-                        Frame(HSplit(
-                            [
-                                logger_window,
-                                logger_search
-                            ]
-                        ), title="Device Log"),
-                    ]
-                ),
-                status_bar
-            ]
+        root_container = FloatContainer(
+            content=HSplit(
+                [
+                    VSplit(
+                        [
+                            ConditionalContainer(
+                                content=Frame(HSplit(
+                                    [
+                                        shell_window,
+                                        shell_search,
+                                        HorizontalLine(),
+                                        self.input_field,
+                                        search_field
+                                    ]
+                                ),
+                                    title=lambda: [('class:cyan', 'Interactive Shell')] if self.has_focus(shell_window) else 'Interactive Shell'),
+                                filter=Condition(lambda: self.zoom != 'logger')
+                            ),
+                            ConditionalContainer(
+                                content=Frame(HSplit(
+                                    [
+                                        logger_window,
+                                        logger_search
+                                    ]
+                                ), title=lambda: [('class:cyan', 'Device Log')] if self.has_focus(logger_window) else 'Device Log'),
+                                filter=Condition(lambda: self.zoom != 'shell')
+                            ),
+                        ]
+                    ),
+                    status_bar
+                ]
+            ),
+            floats=[
+                Float(ConditionalContainer(
+                    content=Frame(
+                        body=VSplit([
+                            Window(FormattedTextControl(lambda: [
+                                ('class:message', 'aaaaa'),
+                                ('[SetCursorPosition]', ''),
+                                ('class:message', ' '),
+                            ]))
+                        ]),
+                        title="A",
+                        width=50,
+                        height=10
+                    ),
+                    filter=Condition(lambda: self.zoom == 'aaa')
+                ), z_index=7),
+            ],
+            style="bg:#111111 fg:#eeeeee",
         )
 
         bindings = KeyBindings()
@@ -193,13 +233,18 @@ class Console:
         @bindings.add("c-insert", eager=True)  # TODO: check
         @bindings.add("c-c", eager=True)
         def _(event):
-            if event.app.layout.has_focus(shell_window):
+            data = None
+            if self.has_focus(shell_window):
                 data = shell_window.buffer.copy_selection()
-                event.app.clipboard.set_data(data)
-
-            elif event.app.layout.has_focus(logger_window):
+            elif self.has_focus(logger_window):
                 data = logger_window.buffer.copy_selection()
-                event.app.clipboard.set_data(data)
+            else:
+                return
+            if data.text:
+                try:
+                    event.app.clipboard.set_data(data)
+                except Exception as e:
+                    logger.error(e)
 
         @bindings.add("f5", eager=True)
         def _(event):
@@ -213,13 +258,24 @@ class Console:
             self.shell_buffer.set_document(Document(''), True)
             self.logger_buffer.set_document(Document(''), True)
 
-        @ bindings.add("c-q", eager=True)
-        @ bindings.add("f4", eager=True)
+        @bindings.add("f3", eager=True)
+        def _(event):
+            if self.zoom:
+                self.zoom = None
+                return
+            if self.has_focus(self.input_field) or self.has_focus(shell_window):
+                self.zoom = 'shell'
+            if self.has_focus(logger_window):
+                self.zoom = 'logger'
+
+        @bindings.add("c-q", eager=True)
+        @bindings.add("f10", eager=True)
+        @bindings.add("c-f10", eager=True)
         def _(event):
             event.app.exit()
 
-        bindings.add("tab")(focus_next)
-        bindings.add("s-tab")(focus_previous)
+        bindings.add("tab")(focus_previous)
+        bindings.add("s-tab")(focus_next)
 
         self.app = Application(
             layout=Layout(root_container, focused_element=self.input_field),
@@ -228,7 +284,12 @@ class Console:
             full_screen=True,
             refresh_interval=1,
             enable_page_navigation_bindings=True,
-            clipboard=PyperclipClipboard()
+            clipboard=PyperclipClipboard(),
+            style=Style.from_dict({
+                'border': '#888888',
+                'message': 'bg:#bbee88 #222222',
+                'statusbar': 'noreverse bg:gray #000000',
+            }, priority=Priority.MOST_PRECISE)
         )
 
         rtt_read_delay = latency / 1000.0
@@ -324,3 +385,6 @@ class Console:
     def exit(self, exception=None):
         self.exception = exception
         self.app.exit()
+
+    def has_focus(self, window):
+        return self.app.layout.has_focus(window)
