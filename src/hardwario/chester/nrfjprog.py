@@ -16,7 +16,19 @@ class NRFJProgRTTNoChannels(NRFJProgException):
 
 
 class NRFJProg(LowLevel.API):
+
+    MCU_APP = 'app'
+    MCU_LTE = 'lte'
+
+    _mcu_lut = {
+        MCU_APP: 'nRF52',
+        MCU_LTE: 'nRF91'
+    }
+
     def __init__(self, mcu, jlin_sn=None, clock_speed=None, log=False, log_suffix=None):
+        if mcu not in self._mcu_lut:
+            raise NRFJProgException(f'Unknown MCU type: {mcu}')
+
         self.mcu = mcu
         self.jlin_sn = jlin_sn
         self.clock_speed = clock_speed
@@ -45,17 +57,9 @@ class NRFJProg(LowLevel.API):
 
         device_family = self.read_device_family()
 
-        if self.mcu == 'app':
-            if device_family != 'NRF52':
-                raise NRFJProgException(
-                    'Detected bad MCU expect: app (NRF52)')
-        elif self.mcu == 'lte':
-            if device_family != 'NRF91':
-                raise NRFJProgException(
-                    'Detected bad MCU expect: lte (NRF91)')
-        else:
+        if device_family != self._mcu_lut[self.mcu].upper():
             raise NRFJProgException(
-                f'Unknown MCU family ({device_family}).')
+                f'An incorrect MCU was detected. The expected device family is {self._mcu_lut[self.mcu]}')
 
         self.select_family(device_family)
 
