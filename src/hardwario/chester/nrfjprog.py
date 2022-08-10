@@ -183,7 +183,7 @@ class NRFJProg(LowLevel.API):
         logger.debug('channel: {} msg: {}', channel, repr(msg))
         return super().rtt_write(channel, msg, encoding)
 
-    def rtt_read(self, channel, length=None, encoding='utf-8', ):
+    def rtt_read(self, channel, length=None, encoding='utf-8'):
         if self._rtt_channels is None:
             raise NRFJProgRTTNoChannels('Can not read, try call rtt_start first')
         if isinstance(channel, str):
@@ -193,9 +193,11 @@ class NRFJProg(LowLevel.API):
             channel = ch['index']
 
         try:
-            msg = super().rtt_read(channel, length, encoding)
+            msg = super().rtt_read(channel, length, encoding=None)
             if msg:
                 logger.debug('channel: {} msg: {}', channel, repr(msg))
+            if encoding:
+                msg = msg.decode(encoding, errors="backslashreplace")
             return msg
         except APIError.APIError as e:
             logger.exception(e)
