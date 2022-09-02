@@ -302,6 +302,10 @@ class Console:
                             lines = prog.rtt_read('Terminal')
                         except NRFJProgRTTNoChannels:
                             return
+                        except NRFJProgException as e:
+                            self.exit(e)
+                            return
+
                         if lines:
                             shell = ''
                             log = ''
