@@ -17,8 +17,10 @@ def cli(ctx, nrfjprog_log):
 
 @cli.command('flash')
 @click.argument('file', metavar='FILE', type=click.Path(exists=True))
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @click.pass_context
-def command_flash(ctx, file):
+def command_flash(ctx, jlink_sn, jlink_speed, file):
     '''Flash modem firmware.'''
 
     def progress(text, ctx={'len': 0}):
@@ -29,6 +31,9 @@ def command_flash(ctx, file):
         text = f'  {text}'
         ctx['len'] = len(text)
         click.echo(text, nl=text == 'Successfully completed')
+
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
 
     if file.endswith('.zip'):
         zf = zipfile.ZipFile(file)
@@ -55,17 +60,25 @@ def command_flash(ctx, file):
 
 
 @cli.command('erase')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @click.pass_context
-def command_erase(ctx):
+def command_erase(ctx, jlink_sn, jlink_speed):
     '''Erase modem firmware.'''
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
     with ctx.obj['prog'] as prog:
         prog.erase_all()
 
 
 @ cli.command('reset')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @ click.pass_context
-def command_reset(ctx):
+def command_reset(ctx, jlink_sn, jlink_speed):
     '''Reset modem firmware.'''
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
     with ctx.obj['prog'] as prog:
         prog.reset()
 
