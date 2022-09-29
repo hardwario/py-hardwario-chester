@@ -25,13 +25,15 @@ class NRFJProg(LowLevel.API):
         MCU_LTE: 'nRF91'
     }
 
-    def __init__(self, mcu, jlin_sn=None, clock_speed=None, log=False, log_suffix=None):
+    LowLevel.API._DEFAULT_JLINK_SPEED_KHZ
+
+    def __init__(self, mcu, jlink_sn=None, clock_speed=None, log=False, log_suffix=None):
         if mcu not in self._mcu_lut:
             raise NRFJProgException(f'Unknown MCU type: {mcu}')
 
         self.mcu = mcu
-        self.jlin_sn = jlin_sn
-        self.clock_speed = clock_speed
+        self.jlink_sn = jlink_sn
+        self.clock_speed = int(clock_speed) if clock_speed else self.LowLevel.API._DEFAULT_JLINK_SPEED_KHZ
         self.log = log
         self.log_suffix = log_suffix
         self._rtt_channels = None
@@ -41,10 +43,10 @@ class NRFJProg(LowLevel.API):
             super().__init__(LowLevel.DeviceFamily.UNKNOWN, log=self.log)
             super().open()
 
-            if self.jlin_sn is not None:
-                self.connect_to_emu_with_snr(self.jlin_sn)
+            if self.jlink_sn is not None:
+                self.connect_to_emu_with_snr(self.jlink_sn, jlink_speed_khz=self.clock_speed)
             else:
-                self.connect_to_emu_without_snr()
+                self.connect_to_emu_without_snr(jlink_speed_khz=self.clock_speed)
 
         except APIError.APIError as e:
             if e.err_code == APIError.NrfjprogdllErr.NO_EMULATOR_CONNECTED:
@@ -222,24 +224,24 @@ class NRFJProg(LowLevel.API):
 
 class HighNRFJProg(HighLevel.DebugProbe):
 
-    def __init__(self, mcu, jlin_sn=None, clock_speed=None, log=False, log_suffix=None):
+    def __init__(self, mcu, jlink_sn=None, clock_speed=None, log=False, log_suffix=None):
         self.mcu = mcu
-        self.jlin_sn = jlin_sn
+        self.jlink_sn = jlink_sn
         self.clock_speed = clock_speed
         self.log = log
         self.log_suffix = log_suffix
 
     def open(self):
-        jlin_sn = self.jlin_sn
+        jlink_sn = self.jlink_sn
         api = get_api()
-        if jlin_sn is None:
+        if jlink_sn is None:
             probes = api.get_connected_probes()
             if not probes:
                 raise NRFJProgException('No J-Link found (check USB cable)')
-            jlin_sn = probes[0]
+            jlink_sn = probes[0]
 
         try:
-            super().__init__(api, jlin_sn, clock_speed=self.clock_speed, log=self.log)
+            super().__init__(api, jlink_sn, clock_speed=self.clock_speed, log=self.log)
         except APIError.APIError as e:
             if e.err_code == APIError.NrfjprogdllErr.LOW_VOLTAGE:
                 raise NRFJProgException(
@@ -299,16 +301,16 @@ def get_api():
     return _api
 
 
-def get_probe(jlin_sn=None):
+def get_probe(jlink_sn=None):
     api = get_api()
-    if not jlin_sn:
+    if not jlink_sn:
         probes = api.get_connected_probes()
         if not probes:
             raise NRFJProgException('No J-Link found (check USB cable)')
-        jlin_sn = probes[0]
+        jlink_sn = probes[0]
 
     try:
-        probe = HighLevel.DebugProbe(get_api(), jlin_sn, log=False)
+        probe = HighLevel.DebugProbe(get_api(), jlink_sn, log=False)
         return probe
     except APIError.APIError as e:
         if e.err_code == APIError.NrfjprogdllErr.LOW_VOLTAGE:
