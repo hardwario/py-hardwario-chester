@@ -11,16 +11,15 @@ from ..nrfjprog import NRFJProg, HighNRFJProg
 from ..console import Console
 from ..firmwareapi import FirmwareApi, DEFAULT_API_URL
 from ..utils import find_hex, download_url
+from ..build import build
 
 
 @click.group(name='app')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=2000, show_default=True)
 @click.option('--nrfjprog-log', is_flag=True, help='Enable nrfjprog log.')
 @click.pass_context
-def cli(ctx, nrfjprog_log, jlink_speed, jlink_sn=None):
+def cli(ctx, nrfjprog_log):
     '''Application SoC commands.'''
-    ctx.obj['prog'] = NRFJProg('app', jlink_sn=jlink_sn, clock_speed=jlink_speed, log=nrfjprog_log)
+    ctx.obj['prog'] = NRFJProg('app', log=nrfjprog_log)
 
 
 def validate_hex_file(ctx, param, value):
@@ -36,9 +35,11 @@ def validate_hex_file(ctx, param, value):
 
 @cli.command('flash')
 @click.option('--halt', is_flag=True, help='Halt program.')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @click.argument('hex_file', metavar='HEX_FILE_OR_ID', callback=validate_hex_file, default=find_hex('.', no_exception=True))
 @click.pass_context
-def command_flash(ctx, halt, hex_file):
+def command_flash(ctx, halt, jlink_sn, jlink_speed, hex_file):
     '''Flash application firmware (preserves UICR area).'''
     click.echo(f'File: {hex_file}')
 
@@ -50,15 +51,22 @@ def command_flash(ctx, halt, hex_file):
         ctx['len'] = len(text)
         click.echo(text, nl=text == 'Successfully completed')
 
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
+
     with ctx.obj['prog'] as prog:
         prog.program(hex_file, halt, progress=progress)
 
 
 @cli.command('erase')
 @click.option('--all', is_flag=True, help='Erase application firmware incl. UICR area.')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @click.pass_context
-def command_erase(ctx, all):
+def command_erase(ctx, all, jlink_sn, jlink_speed):
     '''Erase application firmware w/o UICR area.'''
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
     with ctx.obj['prog'] as prog:
         if all:
             prog.erase_all()
@@ -68,9 +76,13 @@ def command_erase(ctx, all):
 
 @cli.command('reset')
 @click.option('--halt', is_flag=True, help='Halt program.')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @click.pass_context
-def command_reset(ctx, halt):
+def command_reset(ctx, halt, jlink_sn, jlink_speed):
     '''Reset application firmware.'''
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
     with ctx.obj['prog'] as prog:
         prog.reset()
         if halt:
@@ -86,10 +98,15 @@ default_console_file = os.path.expanduser("~/.chester_console")
 @click.option('--latency', type=int, help='Latency for RTT readout in ms.', show_default=True, default=50)
 @click.option('--history-file', type=click.Path(writable=True), show_default=True, default=default_history_file)
 @click.option('--console-file', type=click.File('a', 'utf-8'), show_default=True, default=default_console_file)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @click.pass_context
-def command_console(ctx, reset, latency, history_file, console_file):
+def command_console(ctx, reset, latency, history_file, console_file, jlink_sn, jlink_speed):
     '''Start interactive console for shell and logging.'''
     logger.remove(2)  # Remove stderr logger
+
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
 
     with ctx.obj['prog'] as prog:
         if reset:
@@ -113,11 +130,14 @@ def validate_pib_param(ctx, param, value):
 
 
 @cli.group(name='pib')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
 @click.pass_context
-def group_pib(ctx):
+def group_pib(ctx, jlink_sn, jlink_speed):
     '''HARDWARIO Product Information Block.'''
     ctx.obj['pib'] = PIB()
-    pass
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
 
 
 @group_pib.command('read')
@@ -168,9 +188,13 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
 
 
 @cli.group(name='uicr')
-def group_uicr():
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=4000, show_default=True)
+@click.pass_context
+def group_uicr(ctx, jlink_sn, jlink_speed):
     '''UICR flash area.'''
-    pass
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
 
 
 @group_uicr.command('read')
@@ -282,6 +306,14 @@ def command_fw_info(ctx, id, show_all):
     click.echo(f'SHA256 zephyr_elf: {fw["zephyr_elf_sha256"]}')
     if show_all:
         click.echo(f'Build Manifest:    {json.dumps(fw["manifest"])}')
+
+
+@cli.command('build')
+# @click.option('--halt', is_flag=True, help='Halt program.')
+# @click.argument('hex_file', metavar='HEX_FILE', type=click.Path(exists=True))
+@click.pass_context
+def command_build(ctx):
+    build('.')
 
 
 def main():
