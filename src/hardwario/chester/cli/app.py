@@ -14,11 +14,13 @@ from ..utils import find_hex, download_url
 
 
 @click.group(name='app')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=2000, show_default=True)
 @click.option('--nrfjprog-log', is_flag=True, help='Enable nrfjprog log.')
 @click.pass_context
-def cli(ctx, nrfjprog_log):
+def cli(ctx, nrfjprog_log, jlink_speed, jlink_sn=None):
     '''Application SoC commands.'''
-    ctx.obj['prog'] = NRFJProg('app', log=nrfjprog_log)
+    ctx.obj['prog'] = NRFJProg('app', jlink_sn=jlink_sn, clock_speed=jlink_speed, log=nrfjprog_log)
 
 
 def validate_hex_file(ctx, param, value):

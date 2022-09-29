@@ -32,7 +32,7 @@ class NRFJProg(LowLevel.API):
             raise NRFJProgException(f'Unknown MCU type: {mcu}')
 
         self.mcu = mcu
-        self.jlink_sn = jlink_sn
+        self.jlink_sn = int(jlink_sn) if jlink_sn is not None else None
         self.clock_speed = int(clock_speed) if clock_speed else self.LowLevel.API._DEFAULT_JLINK_SPEED_KHZ
         self.log = log
         self.log_suffix = log_suffix
