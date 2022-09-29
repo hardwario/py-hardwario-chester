@@ -43,6 +43,7 @@ jobs:
       - run: |
           pip install poetry
           poetry install
+          poetry run hardwario --version
           poetry build
 
   deploy:
