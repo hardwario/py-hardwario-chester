@@ -33,10 +33,8 @@ class NRFJProg(LowLevel.API):
         self.log = log
         self.log_suffix = log_suffix
         self._rtt_channels = None
-        if jlink_sn:
-            self.set_serial_number(jlink_sn)
-        if jlink_speed:
-            self.set_speed(jlink_speed)
+        self.set_serial_number(jlink_sn)
+        self.set_speed(jlink_speed)
 
     def set_serial_number(self, serial_number):
         self._jlink_sn = int(serial_number) if serial_number is not None else None
