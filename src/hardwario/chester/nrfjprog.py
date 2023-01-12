@@ -7,6 +7,9 @@ from .pib import PIB
 _api = None
 
 
+DEFAULT_JLINK_SPEED_KHZ = LowLevel.API._DEFAULT_JLINK_SPEED_KHZ
+
+
 class NRFJProgException(Exception):
     pass
 
@@ -25,7 +28,7 @@ class NRFJProg(LowLevel.API):
         MCU_LTE: 'nRF91'
     }
 
-    def __init__(self, mcu, jlink_sn=None, jlink_speed=4000, log=False, log_suffix=None):
+    def __init__(self, mcu, jlink_sn=None, jlink_speed=DEFAULT_JLINK_SPEED_KHZ, log=False, log_suffix=None):
         if mcu not in self._mcu_lut:
             raise NRFJProgException(f'Unknown MCU type: {mcu}')
 
