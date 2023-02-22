@@ -8,7 +8,7 @@ from functools import partial
 from datetime import datetime
 from loguru import logger
 from prompt_toolkit import print_formatted_text
-from prompt_toolkit.eventloop.utils import get_event_loop
+from prompt_toolkit.eventloop.utils import get_running_loop
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.formatted_text import FormattedText, HTML, ANSI
@@ -367,7 +367,7 @@ class Console:
 
         console_file.write(f'{ "*" * 80 }\n')
 
-        loop = get_event_loop()
+        loop = get_running_loop()
         loop.create_task(task_rtt_read())
 
         def accept(buff):
