@@ -62,14 +62,14 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
 name = "hardwario-common"
-version = "1.7.2"
+version = "1.8.0"
 description = "HARDWARIO Common"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
-click = ">=8.1.3"
+click = ">=8.1.3,<9.0.0"
 loguru = ">=0.6.0,<0.7.0"
 
 [[package]]
@@ -304,7 +304,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7, <4"
-content-hash = "f654aad6d9848b7481b6556009830806a90788eb68fcaa4d2e3e7186ddc8bf00"
+content-hash = "638c05cc5dc2100cb288a8e748f10d47b769da614a794c8949371898837f4728"
 
 [metadata.files]
 certifi = [
@@ -417,8 +417,8 @@ future = [
     {file = "future-0.18.3.tar.gz", hash = "sha256:34a17436ed1e96697a86f9de3d15a3b0be01d8bc8de9c1dffd59fb8234ed5307"},
 ]
 hardwario-common = [
-    {file = "hardwario-common-1.7.2.tar.gz", hash = "sha256:554c0926ab196048a3973c7eea83aebd0871227f79f54427da9405edc13856dd"},
-    {file = "hardwario_common-1.7.2-py3-none-any.whl", hash = "sha256:6c618881f5a0d88b75c6b282e6fa6b016fd9b939aee47741eb92101dcd0f9f61"},
+    {file = "hardwario_common-1.8.0-py3-none-any.whl", hash = "sha256:b01b2341c1f267df24f375a99ba6c6e211c73e47cb9ff3991536525dd44e0214"},
+    {file = "hardwario_common-1.8.0.tar.gz", hash = "sha256:1910ae64e334b1c8ff23b7c44a64f68abcf7578335cf7c0dcd584bcdd7cb8c20"},
 ]
 idna = [
     {file = "idna-3.4-py3-none-any.whl", hash = "sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2"},
