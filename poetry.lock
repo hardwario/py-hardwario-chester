@@ -176,11 +176,11 @@ six = "*"
 
 [[package]]
 name = "pynrfjprog"
-version = "10.17.3"
+version = "10.19.0"
 description = "A simple Python interface for the nrfjprog functionality"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 future = "*"
@@ -304,7 +304,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7, <4"
-content-hash = "766a5a0c02c7bdc25a6a219ca19107850597cb6fec1718554440756530932cda"
+content-hash = "f654aad6d9848b7481b6556009830806a90788eb68fcaa4d2e3e7186ddc8bf00"
 
 [metadata.files]
 certifi = [
@@ -469,7 +469,7 @@ pylink-square = [
     {file = "pylink_square-0.12.0-py2.py3-none-any.whl", hash = "sha256:9cd80e36e434afdb5e58261f2b089d9a0745c5419bc906407dc1315933a92212"},
 ]
 pynrfjprog = [
-    {file = "pynrfjprog-10.17.3.zip", hash = "sha256:97a274d6efe5e680595fab89eb0d0ff580158d400ef1a085f6488821d106ca6f"},
+    {file = "pynrfjprog-10.19.0.tar.gz", hash = "sha256:5c1ffb3140ba226b563048b131f8ee13b8de7ae374c027bebf9679b48989acba"},
 ]
 pyperclip = [
     {file = "pyperclip-1.8.2.tar.gz", hash = "sha256:105254a8b04934f0bc84e9c24eb360a591aaf6535c9def5f29d92af107a9bf57"},
