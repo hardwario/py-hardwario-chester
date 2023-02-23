@@ -367,9 +367,6 @@ class Console:
 
         console_file.write(f'{ "*" * 80 }\n')
 
-        loop = get_running_loop()
-        loop.create_task(task_rtt_read())
-
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')
             # self.shell_buffer.insert_text(line)
@@ -381,6 +378,14 @@ class Console:
             return None
 
         self.input_field.accept_handler = accept
+
+        try:
+            loop = get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        loop.create_task(task_rtt_read())
 
         self.app.run()
 
