@@ -147,7 +147,7 @@ class NRFJProg(LowLevel.API):
                 break
             time.sleep(0.1)
         else:
-            raise NRFJProgException('Can not found RTT start block')
+            raise NRFJProgException('Failed to find RTT block')
 
         channel_count = self.rtt_read_channel_count()
         logger.debug(f'RTT channel count {channel_count}')
