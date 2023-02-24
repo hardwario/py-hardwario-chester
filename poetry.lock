@@ -122,11 +122,11 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.37"
+version = "3.0.31"
 description = "Library for building powerful interactive command lines in Python"
 category = "main"
 optional = false
-python-versions = ">=3.7.0"
+python-versions = ">=3.6.2"
 
 [package.dependencies]
 wcwidth = "*"
@@ -176,11 +176,11 @@ six = "*"
 
 [[package]]
 name = "pynrfjprog"
-version = "10.19.0"
+version = "10.17.3"
 description = "A simple Python interface for the nrfjprog functionality"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.6"
 
 [package.dependencies]
 future = "*"
@@ -304,7 +304,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7, <4"
-content-hash = "638c05cc5dc2100cb288a8e748f10d47b769da614a794c8949371898837f4728"
+content-hash = "3fe6efe7dd81b3d7221085d350a082800cda528408f4380d6a4ca297fa3ccc75"
 
 [metadata.files]
 certifi = [
@@ -437,8 +437,8 @@ packaging = [
     {file = "packaging-23.0.tar.gz", hash = "sha256:b6ad297f8907de0fa2fe1ccbd26fdaf387f5f47c7275fedf8cce89f99446cf97"},
 ]
 prompt-toolkit = [
-    {file = "prompt_toolkit-3.0.37-py3-none-any.whl", hash = "sha256:6a2948ec427dfcc7c983027b1044b355db6aaa8be374f54ad2015471f7d81c5b"},
-    {file = "prompt_toolkit-3.0.37.tar.gz", hash = "sha256:d5d73d4b5eb1a92ba884a88962b157f49b71e06c4348b417dd622b25cdd3800b"},
+    {file = "prompt_toolkit-3.0.31-py3-none-any.whl", hash = "sha256:9696f386133df0fc8ca5af4895afe5d78f5fcfe5258111c2a79a1c3e41ffa96d"},
+    {file = "prompt_toolkit-3.0.31.tar.gz", hash = "sha256:9ada952c9d1787f52ff6d5f3484d0b4df8952787c087edf6a1f7c2cb1ea88148"},
 ]
 psutil = [
     {file = "psutil-5.9.4-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:c1ca331af862803a42677c120aff8a814a804e09832f166f226bfd22b56feee8"},
@@ -469,7 +469,7 @@ pylink-square = [
     {file = "pylink_square-0.12.0-py2.py3-none-any.whl", hash = "sha256:9cd80e36e434afdb5e58261f2b089d9a0745c5419bc906407dc1315933a92212"},
 ]
 pynrfjprog = [
-    {file = "pynrfjprog-10.19.0.tar.gz", hash = "sha256:5c1ffb3140ba226b563048b131f8ee13b8de7ae374c027bebf9679b48989acba"},
+    {file = "pynrfjprog-10.17.3.zip", hash = "sha256:97a274d6efe5e680595fab89eb0d0ff580158d400ef1a085f6488821d106ca6f"},
 ]
 pyperclip = [
     {file = "pyperclip-1.8.2.tar.gz", hash = "sha256:105254a8b04934f0bc84e9c24eb360a591aaf6535c9def5f29d92af107a9bf57"},

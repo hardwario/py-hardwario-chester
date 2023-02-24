@@ -8,7 +8,7 @@ from functools import partial
 from datetime import datetime
 from loguru import logger
 from prompt_toolkit import print_formatted_text
-from prompt_toolkit.eventloop.utils import get_running_loop
+from prompt_toolkit.eventloop.utils import get_event_loop
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.formatted_text import FormattedText, HTML, ANSI
@@ -367,6 +367,9 @@ class Console:
 
         console_file.write(f'{ "*" * 80 }\n')
 
+        loop = get_event_loop()
+        loop.create_task(task_rtt_read())
+
         def accept(buff):
             line = f'{buff.text}\n'.replace('\r', '')
             # self.shell_buffer.insert_text(line)
@@ -379,16 +382,15 @@ class Console:
 
         self.input_field.accept_handler = accept
 
-        try:
-            loop = get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+        # try:
+        #     loop = get_running_loop()
+        # except RuntimeError:
+        #     loop = asyncio.new_event_loop()
+        #     asyncio.set_event_loop(loop)
 
         loop.create_task(task_rtt_read())
 
         self.app.run()
-
         prog.rtt_stop()
 
     def exit(self, exception=None):
