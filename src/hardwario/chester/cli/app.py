@@ -91,6 +91,7 @@ def command_reset(ctx, halt, jlink_sn, jlink_speed):
 
 default_history_file = os.path.expanduser("~/.chester_history")
 default_console_file = os.path.expanduser("~/.chester_console")
+default_coredump_file = os.path.expanduser("~/.chester_coredump.bin")
 
 
 @cli.command('console')
@@ -98,10 +99,11 @@ default_console_file = os.path.expanduser("~/.chester_console")
 @click.option('--latency', type=int, help='Latency for RTT readout in ms.', show_default=True, default=50)
 @click.option('--history-file', type=click.Path(writable=True), show_default=True, default=default_history_file)
 @click.option('--console-file', type=click.File('a', 'utf-8'), show_default=True, default=default_console_file)
+@click.option('--coredump-file', type=click.File('wb', 'utf-8', lazy=True), show_default=True, default=default_coredump_file)
 @click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
 @click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
-def command_console(ctx, reset, latency, history_file, console_file, jlink_sn, jlink_speed):
+def command_console(ctx, reset, latency, history_file, console_file, coredump_file, jlink_sn, jlink_speed):
     '''Start interactive console for shell and logging.'''
     logger.remove(2)  # Remove stderr logger
 
@@ -112,7 +114,7 @@ def command_console(ctx, reset, latency, history_file, console_file, jlink_sn, j
         if reset:
             prog.reset()
             prog.go()
-        c = Console(prog, history_file, console_file, latency=latency)
+        c = Console(prog, history_file, console_file, coredump_file, latency=latency)
 
         click.echo('TIP: After J-Link connection, it is crucial to power cycle the target device; otherwise, the CPU debug mode results in a permanently increased power consumption.')
 

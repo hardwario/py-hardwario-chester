@@ -30,6 +30,7 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.validation import Validator, ValidationError
 from prompt_toolkit.layout.dimension import LayoutDimension
 from .nrfjprog import NRFJProg, NRFJProgRTTNoChannels, NRFJProgException
+from .utils import Coredump
 
 
 def get_time():
@@ -78,7 +79,7 @@ class InputValidator(Validator):
 
 class Console:
 
-    def __init__(self, prog: NRFJProg, history_file, console_file, latency=50):
+    def __init__(self, prog: NRFJProg, history_file, console_file, coredump_file, latency=50):
         self.exception = None
         self.show_status_bar = True
         self.scroll_to_end = True
@@ -292,6 +293,8 @@ class Console:
             }, priority=Priority.MOST_PRECISE)
         )
 
+        coredump = Coredump()
+
         rtt_read_delay = latency / 1000.0
 
         if is_old:
@@ -363,7 +366,15 @@ class Console:
                                         continue
                                     console_file.write(get_time() + (' # ' if channel == 'Logger' else ' > '))
                                     console_file.write(sline)
-                                    console_file.write('\n')
+
+                                    coredump.feed_line(sline)
+                                    if coredump.has_end or coredump.has_error:
+                                        logger.info(f'Writing coredump to file, size: {len(coredump.data)}')
+                                        coredump_file.open()
+                                        coredump_file.write(coredump.data)
+                                        coredump_file.flush()
+                                        coredump.reset()
+
                                 console_file.flush()
 
                                 line = line.replace('\r', '')
@@ -373,7 +384,10 @@ class Console:
                                         buffer.cursor_position = len(buffer.text)
                                     buffer._text_changed()
 
-                            await asyncio.sleep(rtt_read_delay)
+                            if coredump.has_begin:
+                                await asyncio.sleep(0.01)
+                            else:
+                                await asyncio.sleep(rtt_read_delay)
 
         console_file.write(f'{ "*" * 80 }\n')
 
