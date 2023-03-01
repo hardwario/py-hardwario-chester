@@ -335,6 +335,10 @@ class Console:
                 ('Terminal', self.shell_buffer),
                 ('Logger', self.logger_buffer)
             )
+            cacheLines = {
+                'Terminal': '',
+                'Logger': ''
+            }
 
             async def task_rtt_read():
                 cnt = 0
@@ -348,9 +352,15 @@ class Console:
                             except NRFJProgException as e:
                                 self.exit(e)
                                 return
+
                             if line:
-                                # buffer.insert_text(line.replace('\r', ''))
-                                for sline in line.splitlines():
+                                slines = (cacheLines[channel] + line).splitlines(keepends=True)
+                                cacheLines[channel] = ''
+                                for sline in slines:
+                                    p = sline[-1]
+                                    if p != '\r' and p != '\n':
+                                        cacheLines[channel] += sline
+                                        continue
                                     console_file.write(get_time() + (' # ' if channel == 'Logger' else ' > '))
                                     console_file.write(sline)
                                     console_file.write('\n')
