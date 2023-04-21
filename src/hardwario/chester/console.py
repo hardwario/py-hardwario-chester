@@ -74,7 +74,8 @@ class LogLexer(Lexer):
 class InputValidator(Validator):
     def validate(self, document: Document) -> None:
         if not re.match(r'^[a-zA-Z0-9", \n]*$', document.text):
-            raise ValidationError(message='Invalid input', cursor_position=len(document.text))
+            raise ValidationError(message='Invalid input',
+                                  cursor_position=len(document.text))
 
 
 class Console:
@@ -117,7 +118,8 @@ class Console:
             focus_on_click=True,
             read_only=True,
             search_field=logger_search,
-            lexer=LogLexer(r'^(#.*?\d(?:\.\d+)? <(\w)\>)(.*)' if is_old else r'^(\[.*?\].*?<(\w+)\>)(.*)')
+            lexer=LogLexer(
+                r'^(#.*?\d(?:\.\d+)? <(\w)\>)(.*)' if is_old else r'^(\[.*?\].*?<(\w+)\>)(.*)')
         )
         self.logger_buffer = logger_window.buffer
         logger.debug(f'history_file: {history_file}')
@@ -129,7 +131,8 @@ class Console:
 
         self.input_field = TextArea(
             height=1,
-            prompt=lambda: [('class:cyan', 'Command: ')] if self.has_focus(self.input_field) else 'Command: ',
+            prompt=lambda: [('class:cyan', 'Command: ')] if self.has_focus(
+                self.input_field) else 'Command: ',
             style="class:input-field",
             multiline=False,
             wrap_lines=False,
@@ -144,7 +147,8 @@ class Console:
             return [
                 ('class:title', ' HARDWARIO CHESTER Console     '),
                 ('class:title', ' <F3> Focus '),
-                ('class:title', ' <F5> Pause ') if self.scroll_to_end else ('class:yellow', ' <F5> Pause '),
+                ('class:title', ' <F5> Pause ') if self.scroll_to_end else (
+                    'class:yellow', ' <F5> Pause '),
                 ('class:title', ' <F8> Clear '),
                 ('class:title', ' <F10> Exit (or Ctrl-<F10>) '),
                 ('class:title', ' [Shift-]<Tab> Cycle '),
@@ -177,34 +181,41 @@ class Console:
                 style="class:statusbar",),
             filter=Condition(lambda: self.show_status_bar))
 
+        hs_schell = HSplit(
+            [
+                shell_window,
+                shell_search,
+                HorizontalLine(),
+                self.input_field,
+                search_field
+            ]
+        )
+
+        hs_logger = HSplit([
+            logger_window,
+            logger_search
+        ])
+
         root_container = FloatContainer(
             content=HSplit(
                 [
-                    VSplit(
-                        [
-                            ConditionalContainer(
-                                content=Frame(HSplit(
-                                    [
-                                        shell_window,
-                                        shell_search,
-                                        HorizontalLine(),
-                                        self.input_field,
-                                        search_field
-                                    ]
-                                ),
-                                    title=lambda: [('class:cyan', 'Interactive Shell')] if self.has_focus(shell_window) else 'Interactive Shell'),
-                                filter=Condition(lambda: self.zoom != 'logger')
-                            ),
-                            ConditionalContainer(
-                                content=Frame(HSplit(
-                                    [
-                                        logger_window,
-                                        logger_search
-                                    ]
-                                ), title=lambda: [('class:cyan', 'Device Log')] if self.has_focus(logger_window) else 'Device Log'),
-                                filter=Condition(lambda: self.zoom != 'shell')
-                            ),
-                        ]
+                    ConditionalContainer(
+                        content=VSplit(
+                            [
+                                Frame(hs_schell,
+                                      title=lambda: [('class:cyan', 'Interactive Shell')] if self.has_focus(shell_window) else 'Interactive Shell'),
+                                Frame(hs_logger, title=lambda: [('class:cyan', 'Device Log')] if self.has_focus(
+                                    logger_window) else 'Device Log')
+                            ]
+                        ),
+                        filter=Condition(lambda: not self.zoom)),
+                    ConditionalContainer(
+                        content=hs_schell,
+                        filter=Condition(lambda: self.zoom == 'shell')
+                    ),
+                    ConditionalContainer(
+                        content=hs_logger,
+                        filter=Condition(lambda: self.zoom == 'logger')
                     ),
                     status_bar
                 ]
@@ -252,7 +263,8 @@ class Console:
             self.scroll_to_end = not self.scroll_to_end
             if self.scroll_to_end:
                 self.shell_buffer.cursor_position = len(self.shell_buffer.text)
-                self.logger_buffer.cursor_position = len(self.logger_buffer.text)
+                self.logger_buffer.cursor_position = len(
+                    self.logger_buffer.text)
 
         @bindings.add("f8", eager=True)
         def _(event):
@@ -281,7 +293,7 @@ class Console:
         self.app = Application(
             layout=Layout(root_container, focused_element=self.input_field),
             key_bindings=bindings,
-            mouse_support=True,
+            mouse_support=Condition(lambda: not self.zoom),
             full_screen=True,
             refresh_interval=1,
             enable_page_navigation_bindings=True,
@@ -326,10 +338,12 @@ class Console:
 
                             if shell:
                                 shell = shell.replace('\r', '')
-                                self.shell_buffer.set_document(Document(self.shell_buffer.text + shell, None), True)
+                                self.shell_buffer.set_document(
+                                    Document(self.shell_buffer.text + shell, None), True)
                             if log:
                                 log = log.replace('\r', '')
-                                self.logger_buffer.set_document(Document(self.logger_buffer.text + log, None), True)
+                                self.logger_buffer.set_document(
+                                    Document(self.logger_buffer.text + log, None), True)
 
                         await asyncio.sleep(rtt_read_delay)
 
@@ -357,19 +371,22 @@ class Console:
                                 return
 
                             if line:
-                                slines = (cacheLines[channel] + line).splitlines(keepends=True)
+                                slines = (
+                                    cacheLines[channel] + line).splitlines(keepends=True)
                                 cacheLines[channel] = ''
                                 for sline in slines:
                                     p = sline[-1]
                                     if p != '\r' and p != '\n':
                                         cacheLines[channel] += sline
                                         continue
-                                    console_file.write(get_time() + (' # ' if channel == 'Logger' else ' > '))
+                                    console_file.write(
+                                        get_time() + (' # ' if channel == 'Logger' else ' > '))
                                     console_file.write(sline)
 
                                     coredump.feed_line(sline)
                                     if coredump.has_end or coredump.has_error:
-                                        logger.info(f'Writing coredump to file, size: {len(coredump.data)}')
+                                        logger.info(
+                                            f'Writing coredump to file, size: {len(coredump.data)}')
                                         coredump_file.open()
                                         coredump_file.write(coredump.data)
                                         coredump_file.flush()
@@ -381,11 +398,12 @@ class Console:
                                 changed = buffer._set_text(buffer.text + line)
                                 if changed:
                                     if self.scroll_to_end:
-                                        buffer.cursor_position = len(buffer.text)
+                                        buffer.cursor_position = len(
+                                            buffer.text)
                                     buffer._text_changed()
 
                             if coredump.has_begin:
-                                await asyncio.sleep(0.01)
+                                await asyncio.sleep(0.001)
                             else:
                                 await asyncio.sleep(rtt_read_delay)
 
