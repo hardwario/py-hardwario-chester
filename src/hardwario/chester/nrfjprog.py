@@ -43,7 +43,13 @@ class NRFJProg(LowLevel.API):
         self._jlink_sn = int(serial_number) if serial_number is not None else None
 
     def set_speed(self, speed):
-        self._jlink_speed = int(speed) if speed is not None else 4000
+        self._jlink_speed = int(speed) if speed is not None else DEFAULT_JLINK_SPEED_KHZ
+
+    def get_serial_number(self):
+        return self._jlink_sn
+
+    def get_speed(self):
+        return self._jlink_speed
 
     def open(self):
         try:
