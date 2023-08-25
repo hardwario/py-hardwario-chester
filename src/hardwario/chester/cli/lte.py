@@ -73,6 +73,7 @@ def command_erase(ctx, jlink_sn, jlink_speed):
     ctx.obj['prog'].set_speed(jlink_speed)
     with ctx.obj['prog'] as prog:
         prog.erase_all()
+    click.echo('Successfully completed')
 
 
 @cli.command('reset')
@@ -85,6 +86,7 @@ def command_reset(ctx, jlink_sn, jlink_speed):
     ctx.obj['prog'].set_speed(jlink_speed)
     with ctx.obj['prog'] as prog:
         prog.reset()
+    click.echo('Successfully completed')
 
 
 @cli.command('trace')

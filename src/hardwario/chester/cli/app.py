@@ -72,6 +72,7 @@ def command_erase(ctx, all, jlink_sn, jlink_speed):
             prog.erase_all()
         else:
             prog.erase_flash()
+    click.echo('Successfully completed')
 
 
 @cli.command('reset')
@@ -87,6 +88,7 @@ def command_reset(ctx, halt, jlink_sn, jlink_speed):
         prog.reset()
         if halt:
             prog.halt()
+    click.echo('Successfully completed')
 
 
 default_history_file = os.path.expanduser("~/.chester_history")
