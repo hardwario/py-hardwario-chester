@@ -134,8 +134,6 @@ def validate_pib_param(ctx, param, value):
 
 
 def validate_pib_hw_variant(ctx, param, value):
-    print('validate_pib_hw_variant', ctx.obj, param.name, value)
-
     filepath = download_url(f'https://production.hardwario.com/api/v1/product/family/chester', filename=f'chester_product_list.json')
     products = json.load(open(filepath))
 
