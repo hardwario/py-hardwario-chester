@@ -4,6 +4,7 @@ import json
 import sys
 import string
 import re
+import time
 from datetime import datetime
 from loguru import logger
 from ..pib import PIB, PIBException
@@ -104,24 +105,47 @@ default_coredump_file = os.path.expanduser("~/.chester_coredump.bin")
 @click.option('--coredump-file', type=click.File('wb', 'utf-8', lazy=True), show_default=True, default=default_coredump_file)
 @click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
 @click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--hex-file', type=click.Path(exists=True), help='Flash hex file. And watch for changes.')
 @click.pass_context
-def command_console(ctx, reset, latency, history_file, console_file, coredump_file, jlink_sn, jlink_speed):
+def command_console(ctx, reset, latency, history_file, console_file, coredump_file, jlink_sn, jlink_speed, hex_file):
     '''Start interactive console for shell and logging.'''
     logger.remove(2)  # Remove stderr logger
 
     ctx.obj['prog'].set_serial_number(jlink_sn)
     ctx.obj['prog'].set_speed(jlink_speed)
 
-    with ctx.obj['prog'] as prog:
-        if reset:
-            prog.reset()
-            prog.go()
-        c = Console(prog, history_file, console_file, coredump_file, latency=latency)
+    def progress(text, ctx={'len': 0}):
+        if ctx['len']:
+            click.echo('\r' + (' ' * ctx['len']) + '\r', nl=False)
+        if not text:
+            return
+        ctx['len'] = len(text)
+        click.echo(text, nl=text == 'Successfully completed')
 
-        click.echo('TIP: After J-Link connection, it is crucial to power cycle the target device; otherwise, the CPU debug mode results in a permanently increased power consumption.')
+    ctx.obj['prog'].set_serial_number(jlink_sn)
+    ctx.obj['prog'].set_speed(jlink_speed)
 
-        if c.exception:
-            raise c.exception
+    while True:
+        with ctx.obj['prog'] as prog:
+
+            if hex_file:
+                prog.program(hex_file, halt=False, progress=progress)
+                prog.go()
+                time.sleep(0.5)
+
+            if reset:
+                prog.reset()
+                prog.go()
+
+            c = Console(prog, history_file, console_file, coredump_file, latency=latency, watch_file=hex_file)
+
+            if c.exception:
+                raise c.exception
+
+            if not hex_file or not c.reload:
+                break
+
+    click.echo('TIP: After J-Link connection, it is crucial to power cycle the target device; otherwise, the CPU debug mode results in a permanently increased power consumption.')
 
 
 def validate_pib_param(ctx, param, value):
@@ -212,6 +236,8 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
 
     with ctx.obj['prog'] as prog:
         prog.write_uicr(buffer, halt=halt)
+
+    click.echo('Successfully completed')
 
 
 @cli.group(name='uicr')
