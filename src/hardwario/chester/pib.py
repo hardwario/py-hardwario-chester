@@ -4,30 +4,6 @@ from hardwario.common.pib import PIB as PIBCommon, PIBException
 
 class PIB(PIBCommon):
 
-    HW_VARIANT_LIST = [
-        'CDGLS',
-        'CGLS',
-        'CGS',
-        'CGV',
-        'CS',
-        'CV',
-        'L',
-        'BCDGLS',
-        'BCGLS',
-        'BCGS',
-        'BCGV',
-        'BCS',
-        'BCV',
-        'BL',
-        'ACDGLS',
-        'ACGLS',
-        'ACGS',
-        'ACGV',
-        'ACS',
-        'ACV',
-        'AL',
-    ]
-
     CLAIM_TOKEN = {
         2: (0x45, '33s')
     }
@@ -42,8 +18,6 @@ class PIB(PIBCommon):
         self._size = self._default_size + 33 + 17
 
     def set_hw_variant(self, value):
-        if value not in self.HW_VARIANT_LIST:
-            raise PIBException('Bad Hardware variant not from list.')
         super().set_hw_variant(value)
 
     def get_claim_token(self):

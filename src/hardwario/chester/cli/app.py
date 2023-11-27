@@ -133,6 +133,31 @@ def validate_pib_param(ctx, param, value):
     return value
 
 
+def validate_pib_hw_variant(ctx, param, value):
+    print('validate_pib_hw_variant', ctx.obj, param.name, value)
+
+    filepath = download_url(f'https://production.hardwario.com/api/v1/product/family/chester', filename=f'chester_product_list.json')
+    products = json.load(open(filepath))
+
+    product_name = ctx.obj['pib'].get_product_name()
+    product = None
+    for product in products:
+        if product['name'] == product_name:
+            break
+    else:
+        raise click.BadParameter('Bad Product name not from list.')
+
+    if not product['assembly_variants']:
+        raise click.BadParameter('Bad Product assembly_variants not from list.')
+
+    if value not in product['assembly_variants']:
+        raise click.BadParameter('Bad Hardware variant not from list.')
+
+    ctx.obj['pib'].set_hw_variant(value)
+
+    return value
+
+
 @cli.group(name='pib')
 @click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
 @click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
@@ -156,7 +181,7 @@ def command_pib_read(ctx, out_json):
     pib = PIB(buffer)
 
     if out_json:
-        click.echo(json.dumps(pib.get_dict()))
+        click.echo(json.dumps(pib.get_dict(), indent=2))
     else:
         click.echo(f'Vendor name: {pib.get_vendor_name()}')
         click.echo(f'Product name: {pib.get_product_name()}')
@@ -170,7 +195,7 @@ def command_pib_read(ctx, out_json):
 @group_pib.command('write')
 @click.option('--vendor-name', type=str, help='Vendor name (max 16 characters).', default='HARDWARIO', prompt=True, show_default=True, callback=validate_pib_param)
 @click.option('--product-name', type=str, help='Product name (max 16 characters).', default='CHESTER-M', prompt=True, show_default=True, callback=validate_pib_param)
-@click.option('--hw-variant', type=click.Choice(PIB.HW_VARIANT_LIST), help='Hardware variant.', default='', prompt='Hardware variant', show_default=True, callback=validate_pib_param)
+@click.option('--hw-variant', type=str, help='Hardware variant.', default='', prompt='Hardware variant', show_default=True, callback=validate_pib_hw_variant)
 @click.option('--hw-revision', type=str, help='Hardware revision in Rx.y format.', default='R3.2', prompt='Hardware revision', show_default=True, callback=validate_pib_param)
 @click.option('--serial-number', type=str, help='Serial number in decimal format.', prompt=True, callback=validate_pib_param)
 @click.option('--claim-token', type=str, help='Claim token for device self-registration (32 hexadecimal characters).', default='', prompt=True, show_default=True, callback=validate_pib_param)
