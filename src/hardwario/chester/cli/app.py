@@ -213,6 +213,8 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
     with ctx.obj['prog'] as prog:
         prog.write_uicr(buffer, halt=halt)
 
+    click.echo('Successfully completed')
+
 
 @cli.group(name='uicr')
 @click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
