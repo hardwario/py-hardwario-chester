@@ -10,9 +10,9 @@ from ..nrfjprog import NRFJProg, DEFAULT_JLINK_SPEED_KHZ
 
 
 @click.group(name='lte')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
-@click.option('--nrfjprog-log', is_flag=True, help='Enable NRFJProg log.')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--nrfjprog-log', is_flag=True, help='Enable nrfjprog logging.')
 @click.pass_context
 def cli(ctx, jlink_sn, jlink_speed, nrfjprog_log):
     '''LTE Modem SoC commands.'''
@@ -21,8 +21,8 @@ def cli(ctx, jlink_sn, jlink_speed, nrfjprog_log):
 
 @cli.command('flash')
 @click.argument('file', metavar='FILE', type=click.Path(exists=True))
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def command_flash(ctx, jlink_sn, jlink_speed, file):
     '''Flash modem firmware.'''
@@ -64,8 +64,8 @@ def command_flash(ctx, jlink_sn, jlink_speed, file):
 
 
 @cli.command('erase')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def command_erase(ctx, jlink_sn, jlink_speed):
     '''Erase modem firmware.'''
@@ -77,8 +77,8 @@ def command_erase(ctx, jlink_sn, jlink_speed):
 
 
 @cli.command('reset')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def command_reset(ctx, jlink_sn, jlink_speed):
     '''Reset modem firmware.'''
@@ -90,8 +90,8 @@ def command_reset(ctx, jlink_sn, jlink_speed):
 
 
 @cli.command('trace')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.option('--file', '-f', 'filename', metavar='FILE', type=click.Path(writable=True))
 @click.option('--tcp', '-t', 'tcpconnect', metavar='TCP', type=str, help='TCP connect to server, format: <host>:<port>')
 @click.pass_context
