@@ -16,10 +16,14 @@ from ..build import build
 
 @click.group(name='app')
 @click.option('--nrfjprog-log', is_flag=True, help='Enable nrfjprog logging.')
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-remote', type=str, metavar='REMOTE_HOST', help='Use remote J-Link connection.')
 @click.pass_context
-def cli(ctx, nrfjprog_log):
+def cli(ctx, nrfjprog_log, jlink_sn, jlink_speed, jlink_remote):
     '''Application SoC commands.'''
-    ctx.obj['prog'] = NRFJProg('app', log=nrfjprog_log)
+    ctx.obj['prog'] = NRFJProg('app', jlink_sn=jlink_sn, jlink_speed=jlink_speed, log=nrfjprog_log)
+    ctx.obj['prog'].set_remote(jlink_remote)
 
 
 def validate_hex_file(ctx, param, value):
@@ -337,12 +341,12 @@ def command_fw_info(ctx, id, show_all):
         click.echo(f'Build Manifest:    {json.dumps(fw["manifest"])}')
 
 
-@cli.command('build')
-# @click.option('--halt', is_flag=True, help='Halt program.')
-# @click.argument('hex_file', metavar='HEX_FILE', type=click.Path(exists=True))
-@click.pass_context
-def command_build(ctx):
-    build('.')
+# @cli.command('build')
+# # @click.option('--halt', is_flag=True, help='Halt program.')
+# # @click.argument('hex_file', metavar='HEX_FILE', type=click.Path(exists=True))
+# @click.pass_context
+# def command_build(ctx):
+#     build('.')
 
 
 def main():
