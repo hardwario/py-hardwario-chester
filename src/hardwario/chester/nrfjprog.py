@@ -36,6 +36,7 @@ class NRFJProg(LowLevel.API):
         self.log = log
         self.log_suffix = log_suffix
         self._rtt_channels = None
+        self._jlink_ip = None
         self.set_serial_number(jlink_sn)
         self.set_speed(jlink_speed)
 
@@ -44,6 +45,25 @@ class NRFJProg(LowLevel.API):
 
     def set_speed(self, speed):
         self._jlink_speed = int(speed) if speed is not None else DEFAULT_JLINK_SPEED_KHZ
+
+    def set_remote(self, host):
+        if host is None:
+            self._jlink_ip = None
+            return
+        if host.startswith('ip '):  # remove ip prefix from connection string
+            host = host[3:]
+
+        if host.startswith('tunnel:'):
+            self._jlink_ip = (host, 0)
+            return
+
+        s = host.split(':')
+        if len(s) == 1:
+            self._jlink_ip = (host, 0)
+        elif len(s) == 2:
+            self._jlink_ip = (s[0], int(s[1]))
+        else:
+            raise NRFJProgException(f'Invalid J-Link remote host: {host}')
 
     def get_serial_number(self):
         return self._jlink_sn
@@ -56,8 +76,13 @@ class NRFJProg(LowLevel.API):
             super().__init__(LowLevel.DeviceFamily.UNKNOWN, log=self.log)
             super().open()
 
-            if self._jlink_sn is not None:
+            if self._jlink_ip:
+                logger.debug('Connecting to J-Link at {}:{}', *self._jlink_ip)
+                self.connect_to_emu_with_ip(self._jlink_ip[0], self._jlink_ip[1], jlink_speed_khz=self._jlink_speed)
+
+            elif self._jlink_sn:
                 self.connect_to_emu_with_snr(self._jlink_sn, jlink_speed_khz=self._jlink_speed)
+
             else:
                 self.connect_to_emu_without_snr(jlink_speed_khz=self._jlink_speed)
 
