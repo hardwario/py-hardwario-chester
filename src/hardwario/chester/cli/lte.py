@@ -16,7 +16,8 @@ from ..nrfjprog import NRFJProg, DEFAULT_JLINK_SPEED_KHZ
 @click.pass_context
 def cli(ctx, jlink_sn, jlink_speed, nrfjprog_log):
     '''LTE Modem SoC commands.'''
-    ctx.obj['prog'] = NRFJProg('lte', log=nrfjprog_log, jlink_sn=jlink_sn, jlink_speed=jlink_speed)
+    ctx.obj['prog'] = NRFJProg(
+        'lte', log=nrfjprog_log, jlink_sn=jlink_sn, jlink_speed=jlink_speed)
 
 
 @cli.command('flash')
@@ -27,6 +28,12 @@ def cli(ctx, jlink_sn, jlink_speed, nrfjprog_log):
 def command_flash(ctx, jlink_sn, jlink_speed, file):
     '''Flash modem firmware.'''
 
+    if jlink_sn:
+        ctx.obj['prog'].set_serial_number(jlink_sn)
+
+    if jlink_speed != DEFAULT_JLINK_SPEED_KHZ:
+        ctx.obj['prog'].set_speed(jlink_speed)
+
     def progress(text, ctx={'len': 0}):
         if ctx['len']:
             click.echo('\r' + (' ' * ctx['len']) + '\r', nl=False)
@@ -35,9 +42,6 @@ def command_flash(ctx, jlink_sn, jlink_speed, file):
         text = f'  {text}'
         ctx['len'] = len(text)
         click.echo(text, nl=text == 'Successfully completed')
-
-    ctx.obj['prog'].set_serial_number(jlink_sn)
-    ctx.obj['prog'].set_speed(jlink_speed)
 
     if file.endswith('.zip'):
         zf = zipfile.ZipFile(file)
@@ -50,10 +54,12 @@ def command_flash(ctx, jlink_sn, jlink_speed, file):
                 zf.extractall(temp_dir)
                 with ctx.obj['prog'] as prog:
                     click.echo(f'Flash: modem.zip')
-                    prog.program(os.path.join(temp_dir, 'modem.zip'), progress=progress)
+                    prog.program(os.path.join(
+                        temp_dir, 'modem.zip'), progress=progress)
                     progress(None)
                     click.echo(f'Flash: application.hex')
-                    prog.program(os.path.join(temp_dir, 'application.hex'), progress=progress)
+                    prog.program(os.path.join(
+                        temp_dir, 'application.hex'), progress=progress)
     else:
         with ctx.obj['prog'] as prog:
             click.echo(f'Flash: {file}')
@@ -69,8 +75,12 @@ def command_flash(ctx, jlink_sn, jlink_speed, file):
 @click.pass_context
 def command_erase(ctx, jlink_sn, jlink_speed):
     '''Erase modem firmware.'''
-    ctx.obj['prog'].set_serial_number(jlink_sn)
-    ctx.obj['prog'].set_speed(jlink_speed)
+    if jlink_sn:
+        ctx.obj['prog'].set_serial_number(jlink_sn)
+
+    if jlink_speed != DEFAULT_JLINK_SPEED_KHZ:
+        ctx.obj['prog'].set_speed(jlink_speed)
+
     with ctx.obj['prog'] as prog:
         prog.erase_all()
     click.echo('Successfully completed')
@@ -82,8 +92,12 @@ def command_erase(ctx, jlink_sn, jlink_speed):
 @click.pass_context
 def command_reset(ctx, jlink_sn, jlink_speed):
     '''Reset modem firmware.'''
-    ctx.obj['prog'].set_serial_number(jlink_sn)
-    ctx.obj['prog'].set_speed(jlink_speed)
+    if jlink_sn:
+        ctx.obj['prog'].set_serial_number(jlink_sn)
+
+    if jlink_speed != DEFAULT_JLINK_SPEED_KHZ:
+        ctx.obj['prog'].set_speed(jlink_speed)
+
     with ctx.obj['prog'] as prog:
         prog.reset()
     click.echo('Successfully completed')
@@ -96,7 +110,7 @@ def command_reset(ctx, jlink_sn, jlink_speed):
 @click.option('--tcp', '-t', 'tcpconnect', metavar='TCP', type=str, help='TCP connect to server, format: <host>:<port>')
 @click.pass_context
 def command_trace(ctx, jlink_sn, jlink_speed, filename, tcpconnect):
-    '''Reset modem firmware.'''
+    '''Modem trace.'''
 
     # sudo socat -d -d pty,link=/dev/virtual_serial_port,raw,echo=0,group-late=dialout,perm=0777 TCP-LISTEN:5555,reuseaddr,fork
 
@@ -121,6 +135,7 @@ def command_trace(ctx, jlink_sn, jlink_speed, filename, tcpconnect):
         print('Starting modem trace...')
 
         text_len = 0
+        last_text = ''
 
         try:
             with ctx.obj['prog'] as prog:
@@ -158,7 +173,7 @@ def command_trace(ctx, jlink_sn, jlink_speed, filename, tcpconnect):
                             print(e)
 
                     if text_len:
-                        print(('\b' * text_len) + (' ' * text_len) + ('\b' * text_len), end='')
+                        print(f"\r{' ' * text_len}\r", end='')
                     if data:
                         recv_len += len(data)
 
