@@ -230,13 +230,13 @@ dev = ["Sphinx (==7.2.5)", "colorama (==0.4.5)", "colorama (==0.4.6)", "exceptio
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.45"
+version = "3.0.31"
 description = "Library for building powerful interactive command lines in Python"
 optional = false
-python-versions = ">=3.7.0"
+python-versions = ">=3.6.2"
 files = [
-    {file = "prompt_toolkit-3.0.45-py3-none-any.whl", hash = "sha256:a29b89160e494e3ea8622b09fa5897610b437884dcdcd054fdc1308883326c2a"},
-    {file = "prompt_toolkit-3.0.45.tar.gz", hash = "sha256:07c60ee4ab7b7e90824b61afa840c8f5aad2d46b3e2e10acc33d8ecc94a49089"},
+    {file = "prompt_toolkit-3.0.31-py3-none-any.whl", hash = "sha256:9696f386133df0fc8ca5af4895afe5d78f5fcfe5258111c2a79a1c3e41ffa96d"},
+    {file = "prompt_toolkit-3.0.31.tar.gz", hash = "sha256:9ada952c9d1787f52ff6d5f3484d0b4df8952787c087edf6a1f7c2cb1ea88148"},
 ]
 
 [package.dependencies]
@@ -312,12 +312,12 @@ six = "*"
 
 [[package]]
 name = "pynrfjprog"
-version = "10.24.2"
+version = "10.23.4"
 description = "A simple Python interface for the nrfjprog functionality"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pynrfjprog-10.24.2.tar.gz", hash = "sha256:0ae6d69d1a1620208422b0eb750d565c6ed7d6ed9b484000c2af0b54c9dac60e"},
+    {file = "pynrfjprog-10.23.4.tar.gz", hash = "sha256:7e0477fd7557753d7b70ceffe47665b37f71cf7d688a50b8160bd104ae54789f"},
 ]
 
 [package.dependencies]
@@ -500,4 +500,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8, <4"
-content-hash = "d7fa5d80cc5bcb9b7daab3bb7579c7791f834937f8990e1ad1542085d8c83efc"
+content-hash = "788d9765489b5591c2c045d2ab5a3d985d17f825c6325eef5a040524013211cb"
