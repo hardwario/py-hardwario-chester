@@ -312,12 +312,12 @@ six = "*"
 
 [[package]]
 name = "pynrfjprog"
-version = "10.23.4"
+version = "10.17.3"
 description = "A simple Python interface for the nrfjprog functionality"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.6"
 files = [
-    {file = "pynrfjprog-10.23.4.tar.gz", hash = "sha256:7e0477fd7557753d7b70ceffe47665b37f71cf7d688a50b8160bd104ae54789f"},
+    {file = "pynrfjprog-10.17.3.zip", hash = "sha256:97a274d6efe5e680595fab89eb0d0ff580158d400ef1a085f6488821d106ca6f"},
 ]
 
 [package.dependencies]
@@ -500,4 +500,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8, <4"
-content-hash = "788d9765489b5591c2c045d2ab5a3d985d17f825c6325eef5a040524013211cb"
+content-hash = "84e68c622f0521b9d26b7d365f199241c11a0f59f35f5e37244d6ce6ff05ff15"
