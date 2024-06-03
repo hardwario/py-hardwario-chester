@@ -54,6 +54,5 @@ def exec(command, app_path, image):
 
 
 def build(app_path):
-    # image = "hardwario/nrf-connect-sdk-build:latest"
-    image = "test"
+    image = "docker.io/hardwario/nrf-connect-sdk-build:v2.3.0-1"
     print(exec('west build', app_path, image))

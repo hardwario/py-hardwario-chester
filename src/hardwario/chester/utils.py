@@ -2,6 +2,7 @@ import os
 from os.path import join, exists, abspath, isfile, getsize, expanduser
 import hashlib
 import click
+import time
 import requests
 import binascii
 from loguru import logger
@@ -118,3 +119,43 @@ class Coredump:
         self.has_end = False
         self.has_error = False
         self.data = b''
+
+
+def rtt_read_line(prog, channel, timeout, cache={'Terminal': '', 'Logger': ''}):
+    timeout = time.time() + timeout
+    while time.time() < timeout:
+        i = cache[channel].find('\n')
+        if i > -1:
+            line = cache[channel][:i]
+            cache[channel] = cache[channel][i + 1:]
+            return line
+
+        data = prog.rtt_read(channel)
+        if data:
+            cache[channel] += data
+
+        i = cache[channel].find('\n')
+        if i < 0:
+            continue
+
+        line = cache[channel][:i]
+        cache[channel] = cache[channel][i + 1:]
+        return line
+
+
+def bytes_to_human(size):
+    # for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    #     if size < 1024.0:
+    #         break
+    #     size /= 1024.0
+    if size < 1024.0:
+        unit = 'B'
+    else:
+        unit = 'KB'
+        size /= 1024.0
+
+    return f"{size:.1f} {unit}"
+
+
+def join_path(*args):
+    return '/'.join(args).replace('//', '/')

@@ -4,26 +4,24 @@ import json
 import sys
 import string
 import re
+import time
 from datetime import datetime
 from loguru import logger
 from ..pib import PIB, PIBException
 from ..nrfjprog import NRFJProg, HighNRFJProg, DEFAULT_JLINK_SPEED_KHZ
 from ..console import Console
 from ..firmwareapi import FirmwareApi, DEFAULT_API_URL
-from ..utils import find_hex, download_url
+from ..utils import find_hex, download_url, bytes_to_human
 from ..build import build
+from ..app import App
 
 
 @click.group(name='app')
-@click.option('--nrfjprog-log', is_flag=True, help='Enable nrfjprog logging.')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
-@click.option('--jlink-remote', type=str, metavar='REMOTE_HOST', help='Use remote J-Link connection.')
+@click.option('--nrfjprog-log', is_flag=True, help='Enable nrfjprog log.')
 @click.pass_context
-def cli(ctx, nrfjprog_log, jlink_sn, jlink_speed, jlink_remote):
+def cli(ctx, nrfjprog_log):
     '''Application SoC commands.'''
-    ctx.obj['prog'] = NRFJProg('app', jlink_sn=jlink_sn, jlink_speed=jlink_speed, log=nrfjprog_log)
-    ctx.obj['prog'].set_remote(jlink_remote)
+    ctx.obj['prog'] = NRFJProg('app', log=nrfjprog_log)
 
 
 def validate_hex_file(ctx, param, value):
@@ -39,8 +37,8 @@ def validate_hex_file(ctx, param, value):
 
 @cli.command('flash')
 @click.option('--halt', is_flag=True, help='Halt program.')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.argument('hex_file', metavar='HEX_FILE_OR_ID', callback=validate_hex_file, default=find_hex('.', no_exception=True))
 @click.pass_context
 def command_flash(ctx, halt, jlink_sn, jlink_speed, hex_file):
@@ -64,8 +62,8 @@ def command_flash(ctx, halt, jlink_sn, jlink_speed, hex_file):
 
 @cli.command('erase')
 @click.option('--all', is_flag=True, help='Erase application firmware incl. UICR area.')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def command_erase(ctx, all, jlink_sn, jlink_speed):
     '''Erase application firmware w/o UICR area.'''
@@ -81,8 +79,8 @@ def command_erase(ctx, all, jlink_sn, jlink_speed):
 
 @cli.command('reset')
 @click.option('--halt', is_flag=True, help='Halt program.')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def command_reset(ctx, halt, jlink_sn, jlink_speed):
     '''Reset application firmware.'''
@@ -106,8 +104,8 @@ default_coredump_file = os.path.expanduser("~/.chester_coredump.bin")
 @click.option('--history-file', type=click.Path(writable=True), show_default=True, default=default_history_file)
 @click.option('--console-file', type=click.File('a', 'utf-8'), show_default=True, default=default_console_file)
 @click.option('--coredump-file', type=click.File('wb', 'utf-8', lazy=True), show_default=True, default=default_coredump_file)
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def command_console(ctx, reset, latency, history_file, console_file, coredump_file, jlink_sn, jlink_speed):
     '''Start interactive console for shell and logging.'''
@@ -161,11 +159,11 @@ def validate_pib_hw_variant(ctx, param, value):
 
 
 @cli.group(name='pib')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def group_pib(ctx, jlink_sn, jlink_speed):
-    '''Commands for PIB (Product Information Block) manipulation.'''
+    '''HARDWARIO Product Information Block.'''
     ctx.obj['pib'] = PIB()
     ctx.obj['prog'].set_serial_number(jlink_sn)
     ctx.obj['prog'].set_speed(jlink_speed)
@@ -221,11 +219,11 @@ def command_pib_write(ctx, vendor_name, product_name, hw_variant, hw_revision, s
 
 
 @cli.group(name='uicr')
-@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='Specify J-Link serial number.')
-@click.option('--jlink-speed', type=int, metavar="SPEED", help='Specify J-Link clock speed in kHz.', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
+@click.option('--jlink-sn', '-n', type=int, metavar='SERIAL_NUMBER', help='JLink serial number')
+@click.option('--jlink-speed', type=int, metavar="SPEED", help='JLink clock speed in kHz', default=DEFAULT_JLINK_SPEED_KHZ, show_default=True)
 @click.pass_context
 def group_uicr(ctx, jlink_sn, jlink_speed):
-    '''Commands for UICR flash area manipulation.'''
+    '''UICR flash area.'''
     ctx.obj['prog'].set_serial_number(jlink_sn)
     ctx.obj['prog'].set_speed(jlink_speed)
 
@@ -277,7 +275,7 @@ def command_uicr_write(ctx, format, halt, file):
 @click.option('--token', metavar='TOKEN', required='--help' not in sys.argv, envvar='HARDWARIO_CLOUD_TOKEN')
 @click.pass_context
 def cli_fw(ctx, url, token):
-    '''Commands for firmware cloud deployment.'''
+    '''Firmware commands.'''
     ctx.obj['fwapi'] = FirmwareApi(url=url, token=token)
 
 
@@ -339,6 +337,111 @@ def command_fw_info(ctx, id, show_all):
     click.echo(f'SHA256 zephyr_elf: {fw["zephyr_elf_sha256"]}')
     if show_all:
         click.echo(f'Build Manifest:    {json.dumps(fw["manifest"])}')
+
+
+@cli.command('command')
+@click.option('--reset', is_flag=True, help='Reset application firmware.')
+@click.option('--timeout', '-t', type=float, metavar='TIMEOUT', help='Read line timeout in seconds.', default=1, show_default=True)
+@click.argument('command', type=str)
+@click.pass_context
+def command_pokus(ctx, reset, timeout, command):
+    with ctx.obj['prog'] as prog:
+        ch = App(prog)
+        if reset:
+            ch.reset()
+            time.sleep(1)
+        ch.terminal_write(f'{command}\n')
+        while True:
+            line = ch.terminal_read_line(timeout)
+            if line is None:
+                break
+            print(line)
+
+
+@cli.group(name='fs')
+@click.pass_context
+def group_fs(ctx):
+    '''File system commands.'''
+
+
+@group_fs.command('ls')
+@click.argument('path', type=str, default='/')
+@click.pass_context
+def command_fs_ls(ctx, path):
+    '''List files in file system.'''
+    with ctx.obj['prog'] as prog:
+        ch = App(prog)
+        for p in ch.fs_ls(path):
+            click.echo(p)
+
+
+def tree(ch, path, prefix):
+    ls = ch.fs_ls(path)
+    for i, name in enumerate(ls):
+        c = '├' if i < len(ls) - 1 else '└'
+        click.echo(prefix + c + '──' + name)
+        if name.endswith('/'):
+            tree(ch, f'{path}/{name}' if path != '/' else f'{path}{name}', prefix + ('│  ' if i < len(ls) - 1 else '   '))
+
+
+@group_fs.command('tree')
+@click.argument('path', type=str, default='/')
+@click.pass_context
+def command_fs_tree(ctx, path):
+    '''List contents of directories in a tree-like format.'''
+    with ctx.obj['prog'] as prog:
+        ch = App(prog)
+        click.echo(path)
+        tree(ch, path, '')
+
+
+@group_fs.command('stats')
+@click.pass_context
+def command_fs_stats(ctx):
+    '''Show file system statistics.'''
+    with ctx.obj['prog'] as prog:
+        ch = App(prog)
+        stat = ch.fs_stat()
+        s = bytes_to_human(stat["size"])
+        u = bytes_to_human(stat["used"])
+        f = bytes_to_human(stat["free"])
+        click.echo(f'Size: {s}')
+        click.echo(f'Used: {u.rjust(len(s))} ({stat["used"] / stat["size"] * 100:>4.1f}%)')
+        click.echo(f'Free: {f.rjust(len(s))} ({stat["free"] / stat["size"] * 100:>4.1f}%)')
+
+
+@group_fs.command('download')
+@click.option('--recursive', '-r', is_flag=True, help='Copy directories recursively.')
+@click.argument('src', type=str)
+@click.argument('dst', type=str)
+@click.pass_context
+def command_fs_download(ctx, recursive, src, dst):
+    '''Download file or directory from file system.'''
+    with ctx.obj['prog'] as prog:
+        ch = App(prog)
+        ch.fs_download(src, dst, recursive)
+
+
+@group_fs.command('upload')
+@click.option('--recursive', '-r', is_flag=True, help='Copy directories recursively.')
+@click.argument('src', type=str)
+@click.argument('dst', type=str)
+@click.pass_context
+def command_fs_upload(ctx, recursive, src, dst):
+    '''Upload file or directory to file system.'''
+    with ctx.obj['prog'] as prog:
+        ch = App(prog)
+        ch.fs_upload(src, dst, recursive)
+
+
+@group_fs.command('rm')
+@click.argument('path', type=str)
+@click.pass_context
+def command_fs_rm(ctx, path):
+    '''Remove file or directory from file system.'''
+    with ctx.obj['prog'] as prog:
+        ch = App(prog)
+        ch.fs_rm(path)
 
 
 # @cli.command('build')

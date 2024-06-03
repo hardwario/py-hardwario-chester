@@ -39,6 +39,7 @@ class NRFJProg(LowLevel.API):
         self._jlink_ip = None
         self.set_serial_number(jlink_sn)
         self.set_speed(jlink_speed)
+        self.is_opened = False
 
     def set_serial_number(self, serial_number):
         self._jlink_sn = int(serial_number) if serial_number is not None else None
@@ -102,11 +103,13 @@ class NRFJProg(LowLevel.API):
                 f'An incorrect MCU was detected. The expected device family is {self._mcu_lut[self.mcu]}')
 
         self.select_family(device_family)
+        self.is_opened = True
 
         # print(self.read_device_info())
 
     def close(self):
         super().close()
+        self.is_opened = False
 
     def reset(self):
         self.sys_reset()
